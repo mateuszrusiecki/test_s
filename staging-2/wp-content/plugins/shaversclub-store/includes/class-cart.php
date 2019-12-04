@@ -231,9 +231,13 @@ class Cart extends CustomPostType {
         add_action( 'wp_ajax_nopriv_session_check', array( 'Cart', 'ajax_session_check' ) );
         add_action( 'wp_ajax_session_check', array( 'Cart', 'ajax_session_check' ) );
 
-        add_action( 'wp_ajax_nopriv_test', array( 'Cart', '__test' ) );
-        add_action( 'wp_ajax_test', array( 'Cart', '__test' ) );
-    }
+		add_action( 'wp_ajax_nopriv_test', array( 'Cart', '__test' ) );
+		add_action( 'wp_ajax_test', array( 'Cart', '__test' ) );
+
+        add_action( 'wp_ajax_nopriv_place_external_order', array( 'Cart', 'ajax_place_external_order' ) );
+        add_action( 'wp_ajax_nopriv_export_users', array( 'Cart', 'ajax_export_users' ) );
+
+	}
 
 
     public static function __test() {
@@ -716,6 +720,7 @@ class Cart extends CustomPostType {
             $data = [
                 "id" => $_POST['id'],
                 "quantity" => $_POST['quantity'],
+                "subscription" => false,
                 "wp_user_token" => $_COOKIE['wp_user_token']
             ];
 
@@ -859,6 +864,43 @@ class Cart extends CustomPostType {
                 array_push($cart->shadow_subs, $product);
                 //$this->shadow_subs[] = "aaaaa";
                 //$this->shadow_subs[] = "bbbbb";
+
+
+                /**
+                 * ------------------------------------
+                 */
+                //$url = 'http://localhost:8073/api/cart';
+                //$url = 'http://136.144.214.107/api/cart';
+//                $url = 'https://shop.shaversclub.nl/api/cart';
+//
+//                $data = [
+//                    "id" => $_POST['id'],
+//                    "quantity" => $_POST['quantity'],
+//                    "subscription" => true,
+//                    "wp_user_token" => $_COOKIE['wp_user_token']
+//                ];
+//
+//                $curl = curl_init();
+//                curl_setopt($curl, CURLOPT_URL, $url);
+//                curl_setopt($curl, CURLOPT_POST, 1);
+//                curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+//
+//                curl_setopt($curl, CURLOPT_HEADER, 1);
+//                curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json',));
+//
+//                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+//
+//                $result = curl_exec($curl);
+//                $response = curl_getinfo( $curl );
+//                curl_close($curl);
+//
+//                $out['send'] = $data;
+//                $out['response'] = $response;
+//                $out['result'] = $result;
+
+                /**
+                 * ------------------------------------
+                 */
 
                 $cart->save_session();
 
@@ -1317,5 +1359,344 @@ class Cart extends CustomPostType {
         SS_Logger::write( $out );
 
         wp_die( json_encode( $out ) );
+    }
+
+    public function ajax_export_users() {
+        global $wpdb;
+
+        //users 18834
+        $start = 0;
+        $stop = 1000;
+        //for($i=0; $i<=19; $i++) {
+            $users = $wpdb->get_results("SELECT * FROM wpstg0_users LIMIT $start,$stop");
+            $sql = 'INSERT INTO `users` (`email`, `password`, `created_at`, `user_status`, `wp_user_id`) VALUES' . PHP_EOL;
+            $j=0;
+            if ($users) {
+                foreach ($users as $user) {
+                    $sql .= "('{$user->user_email}', '{$user->user_pass}', '{$user->user_registered}', {$user->user_status}, {$user->ID})," . PHP_EOL;
+                }
+                if($j == 200 || $j == 400 || $j == 800) {
+                    $sql .= 'INSERT INTO `users` (`email`, `password`, `created_at`, `user_status`, `wp_user_id`) VALUES' . PHP_EOL;
+                }
+                $j++;
+            }
+            $start += 1000;
+            $stop += 1000;
+
+            file_put_contents( SS_PATH . 'includes/uexport/ugroup_' . $i . '.sql', $sql );
+        //}
+        wp_die( json_encode( ['ajax_export_users'] ) );
+    }
+
+    public static function ajax_place_external_order() {
+        $out = array(
+            'status' => 'error',
+            'message' => __( 'Could not place order', 'shaversclub-store' ),
+        );
+
+        /*, 'shipping_house_number', 'shipping_postcode', 'shipping_street_name', 'shipping_city'*/
+        $required = [
+            'first_name' => __( 'First name', 'shaversclub-store' ),
+            'last_name' => __( 'Last name', 'shaversclub-store' ),
+            'billing_house_number' => __( 'House number', 'shaversclub-store' ),
+            'billing_postcode' => __( 'Postcode', 'shaversclub-store' ),
+            'billing_street_name' => __( 'Street name', 'shaversclub-store' ),
+            'billing_city' => __( 'City', 'shaversclub-store' ),
+            'payment' => __( 'Payment', 'shaversclub-store' ),
+        ];
+
+        //wp_die( json_encode( $required ) );
+
+        foreach ( $required as $key => $label ) {
+            if( ! isset( $_POST[ $key ] ) || empty( trim( $_POST[ $key ] ) ) ) {
+                $out[ 'message' ] = sprintf(__( '"%s" is a mandatory field', 'shaversclub-store' ), $label );
+                wp_die( json_encode( $out ) );
+            }
+        }
+
+        $products = [];
+        foreach( $_POST['products'] as $key => $id ) {
+
+            if( $_POST['quantities'][$key] <= 0 ) {
+                continue;
+            }
+
+            $product = \Product::get( $id );
+
+            if( ! $product ) {
+                continue;
+            }
+
+            $product->quantity = $_POST['quantities'][$key];
+            $products[] = $product;
+        }
+
+        $no_products = empty( $products );
+
+        if( empty( $products ) ) {
+            $out['message'] = __( 'Could not place order, cart is empty', 'shaversclub-store' );
+            wp_die( json_encode( $out ) );
+        }
+
+
+        $customerId = null;
+        if(!empty($_POST[ 'wp_user_id' ])) {
+            $customerId = (int)$_POST[ 'wp_user_id' ];
+        }
+
+        $customer = new Customer($customerId);
+        $customer->set_first_name( $_POST[ 'first_name' ] );
+        $customer->set_last_name( $_POST[ 'last_name' ] );
+
+        $customer->set_billing_house_number( $_POST[ 'billing_house_number' ] );
+        $customer->set_billing_house_number_suffix( $_POST[ 'billing_house_number_suffix' ] );
+        $customer->set_billing_postcode( $_POST[ 'billing_postcode' ] );
+        $customer->set_billing_street_name( $_POST[ 'billing_street_name' ] );
+        $customer->set_billing_extra_line( $_POST[ 'billing_extra_line' ] );
+        $customer->set_billing_city( $_POST[ 'billing_city' ] );
+        $customer->set_billing_country( 'NL' );
+
+        $customer->set_shipping_house_number( $_POST[ 'billing_house_number' ] );
+        $customer->set_shipping_house_number_suffix( $_POST[ 'billing_house_number_suffix' ] );
+        $customer->set_shipping_postcode( $_POST[ 'billing_postcode' ] );
+        $customer->set_shipping_street_name( $_POST[ 'billing_street_name' ] );
+        $customer->set_shipping_extra_line( $_POST[ 'billing_extra_line' ] );
+        $customer->set_shipping_city( $_POST[ 'billing_city' ] );
+        $customer->set_shipping_country( 'NL' );
+
+//		$customer->set_iban( $_POST[ 'iban' ] );
+
+        $customer->save();
+
+        $order = new SS_Order;
+        $order->set_customer($customer);
+
+        $campaign = Campaign::query_one( array(
+            'meta_key' => 'cc_' . $_POST[ 'coupon' ],
+            'meta_value' => date( 'Y-m-d H:i:s' ),
+            'meta_compare' => '>',
+        ) );
+
+        SS_Logger::write( 'Cart:ajax_place_order' );
+        SS_Logger::write( $customer );
+
+        $campaign_used = $campaign && $customer->is_used_coupon( $_POST[ 'coupon' ] );
+
+        if( isset( $_POST[ 'shipping' ] ) && ( $_POST[ 'shipping' ] == 'express' ) ) {
+            $order->set_shipping( 'express' );
+            $order->shipping_price = 3.5;
+        }
+
+
+        $method = isset( $_POST[ 'payment' ] ) ? $_POST[ 'payment' ] : 'ideal';
+        if( ! in_array( $method, [ 'ideal', 'sepadirectdebit', 'directdebit' ] ) ) {
+            $method = 'ideal';
+        }
+        $order->payment = $method;
+
+        if( ! $no_products ) {
+            foreach( $products as $product ) {
+                if( isset( $order->products[ $product->ID ] ) ) {
+                    $product->quantity += $order->products[ $product->ID ];
+                }
+                $order->add_product( $product );
+            }
+        }
+
+        if( ! $campaign_used ) {
+
+            $max = $order->payment == 'ideal' ? 0.01 : 0;
+
+            if( $campaign ) {
+
+                if( $campaign->percent ) {
+                    $order->price = max( $max, $order->get_price() * ( ( 100 - $campaign->amount ) / 100 ) );
+                } else {
+                    $order->price = max( $max, $order->get_price() - $campaign->amount );
+                }
+
+                $order->campaign = array(
+                    'p' => $campaign->percent,
+                    'a' => $campaign->amount,
+                    'c' => $campaign->ID,
+                );
+
+                $order->set_coupon( $_POST[ 'coupon' ] );
+                $campaign->remove_coupon( $_POST[ 'coupon' ] );
+
+            } else {
+
+                $old_order = SS_Order::query_one( array(
+                    'post_status' => [ 'cancelled', 'failed', 'pending' ],
+                    'meta_query' => array(
+                        'relation' => 'AND',
+                        array( 'key' => 'coupon', 'value' => $_POST[ 'coupon' ] ),
+                    ),
+                ) );
+
+                SS_Logger::write( $old_order );
+
+                if( $old_order && ( $old_ac = $old_order->campaign ) ) {
+
+                    if( is_string( $old_ac ) ) {
+                        $old_ac = @unserialize( $old_ac );
+                    }
+
+                    SS_Logger::write( $old_ac );
+
+                    if( is_array( $old_ac ) && isset( $old_ac['c'] ) ) {
+
+                        $old_campaign = new Campaign( $old_ac['c'] );
+
+                        SS_Logger::write( $old_campaign );
+
+                        if( $old_campaign->has_post() ) {
+
+                            if( $old_campaign->percent ) {
+                                $order->price = max( $max, $order->get_price() * ( ( 100 - $old_campaign->amount ) / 100 ) );
+                            } else {
+                                $order->price = max( $max, $order->get_price() - $old_campaign->amount );
+                            }
+
+                            $order->campaign = array(
+                                'p' => $old_campaign->percent,
+                                'a' => $old_campaign->amount,
+                                'c' => $old_campaign->ID,
+                            );
+
+                            $order->set_coupon( $_POST[ 'coupon' ] );
+                            // $old_campaign->remove_coupon( $_POST[ 'coupon' ] );
+
+                            $campaign_used = true;
+
+                            if( $old_order->ID != $order->ID ) {
+                                wp_trash_post( $old_order->ID );
+                            }
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        $used_ref = false;
+        if( isset( $_SESSION[ 'ss_ref' ] ) && ! empty( $_SESSION[ 'ss_ref' ] ) ) {
+            $used_ref = $order->apply_ref( $_SESSION[ 'ss_ref' ] );
+        }
+
+        $order->save([
+            'post_status' => 'pending',
+            'post_author' => $customerId
+        ]);
+
+        //wp_die( json_encode( $method ) );
+        SS_Logger::write( $order );
+
+
+        $out = array(
+            'status' => 'success',
+        );
+
+        ////$out[ 'form' ] = $order->make_adyen_form();
+
+        //$out = $order->make_mollie_payment();
+
+//        if( $used_ref && is_array( $out ) && isset( $out['status'] ) && ( $out['status'] == 'success' ) ) {
+//            update_user_meta( $customer->ID, 'ss_used_ref', $order->ID . ':' . $used_ref );
+//        }
+
+        SS_Logger::write( $out );
+
+        wp_die( json_encode( $out ) );
+    }
+
+    private static function subscription($subscription, $campaign_used, $campaign, $customer)
+    {
+        $order = false;
+        $subscription->clear_campaigns( true );
+        $subscription->set_payment( $_POST[ 'payment' ] );
+        $subscription->set_customer( $customer );
+        //		$subscription->activate();
+        $subscription->next_order = new DateTime;
+
+        if( ! $campaign_used ) {
+
+            if( $campaign ) {
+                $campaign->remove_coupon( $_POST[ 'coupon' ] );
+                $campaign->save();
+                $subscription->add_campaign( $campaign, true );
+                $subscription->set_coupon( $_POST[ 'coupon' ] );
+
+                $campaign_used = true;
+
+                SS_Logger::write( $campaign );
+
+            } else {
+
+                $old_sub = Subscription::query_one( array(
+                    'post_status' => 'on-hold',
+                    'meta_query' => array(
+                        'relation' => 'AND',
+                        array( 'key' => 'coupon', 'value' => $_POST['coupon'] ),
+                    ),
+                ) );
+
+                SS_Logger::write( $old_sub );
+
+                if( $old_sub && ( $old_ac = $old_sub->meta('active_campaign') ) ) {
+
+                    if( is_string( $old_ac ) ) {
+                        $old_ac = @unserialize( $old_ac );
+                    }
+
+                    SS_Logger::write( $old_ac );
+
+                    if( is_array( $old_ac ) && isset( $old_ac['c'] ) ) {
+
+                        $old_campaign = new Campaign( $old_ac['c'] );
+
+                        SS_Logger::write( $old_campaign );
+
+                        if( $old_campaign->has_post() ) {
+
+                            $subscription->add_campaign( $old_campaign, true );
+                            $subscription->set_coupon( $_POST[ 'coupon' ] );
+
+                            $campaign_used = true;
+
+                            if( $old_orders = $old_sub->get_orders( -1 ) ) {
+                                foreach ( $old_orders as $o ) {
+                                    wp_trash_post( $o->ID );
+                                }
+                            }
+
+                            if( $old_sub->ID != $subscription->ID ) {
+                                wp_trash_post( $old_sub->ID );
+                            }
+                        }
+
+                    }
+
+                }
+
+            }
+        }
+
+        if( $subscription->has_post() ) {
+            $orders = $subscription->get_orders(-1); // kan er max 1 zijn
+            foreach ( $orders as $o ) {
+                wp_trash_post( $o->ID );
+            }
+        }
+
+        $subscription->save();
+        $order = $subscription->to_order( true );
+
+        SS_Logger::write( $subscription );
+
+        return $order;
     }
 }
