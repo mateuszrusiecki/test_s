@@ -1662,8 +1662,58 @@ class SS_Order extends CustomPostType {
 
         add_action( 'wp_ajax_ss_send_email', array( 'SS_Order', 'ajax_send_email' ) );
         add_action( 'wp_ajax_ss_get_custom_order_columns', array( 'SS_Order', 'ajax_get_custom_order_columns' ) );
+
+        add_action( 'wp_ajax_nopriv_save_external_order_data', array( 'SS_Order', 'ajax_save_external_order_data' ) );
     }
 
+    public static function ajax_save_external_order_data() {
+        //die(var_dump(implode( ',',$_POST['products'])));
+        ///die(var_dump($_POST));
+
+        $order = new SS_Order();
+        $order->meta[ 'date' ] = $order->date->format( 'Y-m-d H:i:s' );
+        $order->meta[ 'price' ] =  $_POST['price'];
+        $order->meta[ 'shipping_price' ] = $_POST['shipping_price'];
+        $order->meta[ 'payment' ] = $_POST['payment']; //'ideal', 'sepadirectdebit', 'directdebit'
+        $order->meta[ 'initial' ] = $_POST['initial'];
+        $order->meta[ 'campaign' ] = $_POST['campaign'];
+        $order->meta[ '_filter_price' ] = $order->get_price();
+        if( $_POST['subscription']) {
+            $order->meta[ 'subscription' ] = $_POST['subscription']; //id
+        }
+
+//        if( is_array( $this->campaign ) && isset( $this->campaign['c'] ) ) {
+//            $this->meta[ '_campaign' ] = $this->campaign['c'];
+//        }
+
+        $ids = $_POST['products'];
+        $order->meta[ 'products' ] = implode( ',', $ids );
+
+        $meta = $order->meta( '_myparcel_shipments', true );
+        if(!empty($meta)) {
+            $order->meta[ '_myparcel_shipments' ] = array( $meta );
+        }
+
+        if(empty( $order->post ) ) {
+            if(!isset($attr[ 'post_status' ])) {
+                $attr[ 'post_status' ] = 'upcoming';
+            }
+
+            if( $order->meta[ 'subscription' ] ) {
+                $attr[ 'post_author' ] = $order->subscription->post_author;//meta( 'customer' )
+            }
+            $attr[ 'post_title' ] = $order->make_def_title();
+        }
+
+        parent::save($attr);
+
+        //if it is a new order, parent :: save must first generate an ID
+        foreach ($ids as $id) {
+            //add_post_meta( $order->ID, '_product', $id );
+            //update_post_meta( $order->ID, '_quantity_' . $id, ( $q = $order->products[ $id ]->quantity ) ? $q : 1 );
+        }
+        wp_die( json_encode( ['okk'] ) );
+    }
 
     public static function ajax_get_order_data() {
 
