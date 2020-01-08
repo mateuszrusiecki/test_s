@@ -237,6 +237,8 @@ class Cart extends CustomPostType {
         add_action( 'wp_ajax_nopriv_place_external_order', array( 'Cart', 'ajax_place_external_order' ) );
         add_action( 'wp_ajax_nopriv_export_users', array( 'Cart', 'ajax_export_users' ) );
 
+        add_action( 'wp_ajax_nopriv_external_check_coupon', array( 'Cart', 'ajax_external_check_coupon' ) );
+
 	}
 
 
@@ -431,6 +433,147 @@ class Cart extends CustomPostType {
         }
 
         wp_die( json_encode( $out ) );
+    }
+
+    public static function ajax_external_check_coupon() {
+        $out = array(
+            'status' => 'error',
+            'message' => __( 'Coupon code not found', 'shaversclub-store' ),
+        );
+
+        if(empty( $_POST['coupon'])) {
+            wp_die( json_encode( $out ) );
+        }
+
+        $campaign = Campaign::query_one( array(
+            'meta_key' => 'cc_' . $_POST[ 'coupon' ],
+            'meta_value' => date( 'Y-m-d H:i:s' ),
+            'meta_compare' => '>',
+        ) );
+
+        SS_Logger::write( 'Cart:ajax_external_check_coupon' );
+
+        //$cart = Cart::get_cart_from_session();
+        //$cart->set_campaign( null );
+        if( $campaign ) {
+            SS_Logger::write( $campaign );
+
+            //$cart->set_campaign( $campaign );
+            $out = array(
+                'status' => 'success',
+                'message' => $campaign->post_title,
+            );
+        } else {
+
+            $old_sub = Subscription::query_one( array(
+                'post_status' => 'on-hold',
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array( 'key' => 'coupon', 'value' => $_POST['coupon'] ),
+                ),
+            ));
+
+            SS_Logger::write( $old_sub );
+
+            if( $old_sub && ( $old_ac = $old_sub->meta('active_campaign') ) ) {
+                $out = self::oldSub($old_ac, $out);
+            } else {
+                $out = self::refCoupon($_POST['coupon'], $out);
+            }
+        }
+
+        $out = array_merge( $out, self::apply_custom_discount($campaign, $_POST['total'], $out['options']) );
+
+
+        wp_die( json_encode( $out ) );
+    }
+
+    private static function oldSub($old_ac, $out)
+    {
+        if( is_string( $old_ac ) ) {
+            $old_ac = @unserialize( $old_ac );
+        }
+
+        SS_Logger::write( $old_ac );
+
+        if( is_array( $old_ac ) && isset( $old_ac['c'] ) ) {
+
+            $old_campaign = new Campaign( $old_ac['c'] );
+
+            SS_Logger::write( $old_campaign );
+
+            if( $old_campaign->has_post() ) {
+
+                return array(
+                    'status' => 'success',
+                    'old_campaign' => $old_campaign,
+                );
+            }
+
+        }
+
+        return $out;
+    }
+
+    private static function refCoupon($coupon, $out)
+    {
+        $customer = new Customer;
+        $users = $user_query = new WP_User_Query( array(
+            'meta_key' => 'ss_ref',
+            'meta_value' => $coupon,
+            'exclude' => $customer->ID ? [ $customer->ID ] : [],
+        ) );
+
+        if( $users->results ) {
+
+            $user = $users->results[0];
+            $referrer = new Customer( $user );
+            $_SESSION[ 'ss_ref' ] = $coupon;
+
+            if(
+                ( ! $customer->ID || ( $referrer->ID != $customer->ID ) )
+                && ( ! $customer->meta( 'ss_used_ref' ) )
+            ) {
+
+                $options = json_decode( get_option( 'ss-referral-options', '[]' ), true );
+
+                return array(
+                    'status' => 'success',
+                    'options' => $options,
+                    'message' => 'Doorverwezen door ' . $user->display_name,
+                );
+
+            }
+
+        }
+
+        return $out;
+    }
+
+    public static function apply_custom_discount($campaign, $total_price, $options = [])
+    {
+        $discount = 0;
+
+        if( $campaign ) {
+            $tps = $campaign->apply( $total_price, true, true );
+            $total_price = $tps[0];
+            $discount += $tps[1];
+        }
+
+        if($options) {
+
+            $amount = isset( $options[ 'a' ] ) ? floatval( $options[ 'a' ] ) : 0 ;
+            $max = 0.01;
+
+            $new_total_price = ( isset( $options[ 'p' ] ) && $options[ 'p' ] )
+                ? max( $max, $total_price * ( ( 100 - $amount ) / 100 ) )
+                : max( $max, $total_price - $amount );
+            $discount += $total_price - $new_total_price;
+            $total_price = $new_total_price;
+
+        }
+
+        return compact( 'total_price', 'discount' );
     }
 
     public function apply_discount() {
@@ -1222,7 +1365,7 @@ class Cart extends CustomPostType {
             }
 
             if( $subscription->has_post() ) {
-                $orders = $subscription->get_orders(-1); // kan er max 1 zijn
+                $orders = $subscription->get_orders(-1); // there can be max 1
                 foreach ( $orders as $o ) {
                     wp_trash_post( $o->ID );
                 }
@@ -1414,31 +1557,6 @@ class Cart extends CustomPostType {
             }
         }
 
-        $products = [];
-        foreach( $_POST['products'] as $key => $id ) {
-
-            if( $_POST['quantities'][$key] <= 0 ) {
-                continue;
-            }
-
-            $product = \Product::get( $id );
-
-            if( ! $product ) {
-                continue;
-            }
-
-            $product->quantity = $_POST['quantities'][$key];
-            $products[] = $product;
-        }
-
-        $no_products = empty( $products );
-
-        if( empty( $products ) ) {
-            $out['message'] = __( 'Could not place order, cart is empty', 'shaversclub-store' );
-            wp_die( json_encode( $out ) );
-        }
-
-
         $customerId = null;
         if(!empty($_POST[ 'wp_user_id' ])) {
             $customerId = (int)$_POST[ 'wp_user_id' ];
@@ -1494,7 +1612,46 @@ class Cart extends CustomPostType {
         }
         $order->payment = $method;
 
-        if( ! $no_products ) {
+
+        $products = [];
+        foreach( $_POST['products'] as $key => $id ) {
+
+            if( $_POST['quantities'][$key] <= 0 ) {
+                continue;
+            }
+
+            $product = \Product::get( $id );
+
+            if( ! $product ) {
+                continue;
+            }
+
+            $product->quantity = $_POST['quantities'][$key];
+            $products[] = $product;
+        }
+
+        if( $_POST['subscriptions']) {
+            $subscription = new Subscription;
+
+            $products = [];
+            foreach( $_POST['subscriptions'] as $key => $id ) {
+                $product = \Product::get( $id );
+
+                if( ! $product ) {
+                    continue;
+                }
+                $subscription->add_initial_product( $product );
+            }
+
+            self::subscription($subscription, $campaign_used, $campaign, $customer);
+        }
+
+        if( empty( $products ) && empty($subscription)) {
+            $out['message'] = __( 'Could not place order, cart is empty', 'shaversclub-store' );
+            wp_die( json_encode( $out ) );
+        }
+
+        if( ! empty($products) ) {
             foreach( $products as $product ) {
                 if( isset( $order->products[ $product->ID ] ) ) {
                     $product->quantity += $order->products[ $product->ID ];
@@ -1504,82 +1661,7 @@ class Cart extends CustomPostType {
         }
 
         if( ! $campaign_used ) {
-
-            $max = $order->payment == 'ideal' ? 0.01 : 0;
-
-            if( $campaign ) {
-
-                if( $campaign->percent ) {
-                    $order->price = max( $max, $order->get_price() * ( ( 100 - $campaign->amount ) / 100 ) );
-                } else {
-                    $order->price = max( $max, $order->get_price() - $campaign->amount );
-                }
-
-                $order->campaign = array(
-                    'p' => $campaign->percent,
-                    'a' => $campaign->amount,
-                    'c' => $campaign->ID,
-                );
-
-                $order->set_coupon( $_POST[ 'coupon' ] );
-                $campaign->remove_coupon( $_POST[ 'coupon' ] );
-
-            } else {
-
-                $old_order = SS_Order::query_one( array(
-                    'post_status' => [ 'cancelled', 'failed', 'pending' ],
-                    'meta_query' => array(
-                        'relation' => 'AND',
-                        array( 'key' => 'coupon', 'value' => $_POST[ 'coupon' ] ),
-                    ),
-                ) );
-
-                SS_Logger::write( $old_order );
-
-                if( $old_order && ( $old_ac = $old_order->campaign ) ) {
-
-                    if( is_string( $old_ac ) ) {
-                        $old_ac = @unserialize( $old_ac );
-                    }
-
-                    SS_Logger::write( $old_ac );
-
-                    if( is_array( $old_ac ) && isset( $old_ac['c'] ) ) {
-
-                        $old_campaign = new Campaign( $old_ac['c'] );
-
-                        SS_Logger::write( $old_campaign );
-
-                        if( $old_campaign->has_post() ) {
-
-                            if( $old_campaign->percent ) {
-                                $order->price = max( $max, $order->get_price() * ( ( 100 - $old_campaign->amount ) / 100 ) );
-                            } else {
-                                $order->price = max( $max, $order->get_price() - $old_campaign->amount );
-                            }
-
-                            $order->campaign = array(
-                                'p' => $old_campaign->percent,
-                                'a' => $old_campaign->amount,
-                                'c' => $old_campaign->ID,
-                            );
-
-                            $order->set_coupon( $_POST[ 'coupon' ] );
-                            // $old_campaign->remove_coupon( $_POST[ 'coupon' ] );
-
-                            $campaign_used = true;
-
-                            if( $old_order->ID != $order->ID ) {
-                                wp_trash_post( $old_order->ID );
-                            }
-                        }
-
-                    }
-
-                }
-
-            }
-
+            $order = self::coupon($order, $campaign, $_POST[ 'coupon' ]);
         }
 
         $used_ref = false;
@@ -1598,6 +1680,7 @@ class Cart extends CustomPostType {
 
         $out = array(
             'status' => 'success',
+            'order_id' => $order->ID,
         );
 
         ////$out[ 'form' ] = $order->make_adyen_form();
@@ -1611,6 +1694,87 @@ class Cart extends CustomPostType {
         SS_Logger::write( $out );
 
         wp_die( json_encode( $out ) );
+    }
+
+    private static function coupon($order, $campaign, $coupon)
+    {
+
+        $max = $order->payment == 'ideal' ? 0.01 : 0;
+
+        if( $campaign ) {
+
+            if( $campaign->percent ) {
+                $order->price = max( $max, $order->get_price() * ( ( 100 - $campaign->amount ) / 100 ) );
+            } else {
+                $order->price = max( $max, $order->get_price() - $campaign->amount );
+            }
+
+            $order->campaign = array(
+                'p' => $campaign->percent,
+                'a' => $campaign->amount,
+                'c' => $campaign->ID,
+            );
+
+            $order->set_coupon( $coupon );
+            $campaign->remove_coupon( $coupon );
+
+        } else {
+
+            $old_order = SS_Order::query_one( array(
+                'post_status' => [ 'cancelled', 'failed', 'pending' ],
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array( 'key' => 'coupon', 'value' => $coupon ),
+                ),
+            ) );
+
+            SS_Logger::write( $old_order );
+
+            if( $old_order && ( $old_ac = $old_order->campaign ) ) {
+
+                if( is_string( $old_ac ) ) {
+                    $old_ac = @unserialize( $old_ac );
+                }
+
+                SS_Logger::write( $old_ac );
+
+                if( is_array( $old_ac ) && isset( $old_ac['c'] ) ) {
+
+                    $old_campaign = new Campaign( $old_ac['c'] );
+
+                    SS_Logger::write( $old_campaign );
+
+                    if( $old_campaign->has_post() ) {
+
+                        if( $old_campaign->percent ) {
+                            $order->price = max( $max, $order->get_price() * ( ( 100 - $old_campaign->amount ) / 100 ) );
+                        } else {
+                            $order->price = max( $max, $order->get_price() - $old_campaign->amount );
+                        }
+
+                        $order->campaign = array(
+                            'p' => $old_campaign->percent,
+                            'a' => $old_campaign->amount,
+                            'c' => $old_campaign->ID,
+                        );
+
+                        $order->set_coupon( $coupon );
+                        // $old_campaign->remove_coupon( $_POST[ 'coupon' ] );
+
+                        $campaign_used = true;
+
+                        if( $old_order->ID != $order->ID ) {
+                            wp_trash_post( $old_order->ID );
+                        }
+                    }
+
+                }
+
+            }
+
+        }
+
+        return $order;
     }
 
     private static function subscription($subscription, $campaign_used, $campaign, $customer)

@@ -1,5 +1,7 @@
 <?php
 
+    SS_Custom_Logger::write( '-- mollie.php --' );
+
 	$dir = dirname( __FILE__ );
 	while ( ! file_exists( $dir . '/wp-load.php' ) ) {
 		$dir = dirname( $dir );
@@ -34,13 +36,13 @@
 		$status = $payment->status;
 
 		//SS_Logger::write( $status );
-		SS_Logger::write( (array)$payment );
-		SS_Logger::write( $order );
-		SS_Logger::write( $customer );
-		SS_Logger::write( $payment->status );
+        SS_Custom_Logger::write( (array)$payment );
+        SS_Custom_Logger::write( $order );
+        SS_Custom_Logger::write( $customer );
+        SS_Custom_Logger::write( $payment->status );
 
 		if( $pd = $order->meta('_paid_date') ) {
-			SS_Logger::write( 'already paid: ' . $pd );
+            SS_Custom_Logger::write( 'already paid: ' . $pd );
 			exit();
 		}
 
@@ -110,10 +112,10 @@
 				break;
 		}
 
-		SS_Logger::write( $order->post_status );
+        SS_Custom_Logger::write( $order->post_status );
 
 	} catch ( Mollie_API_Exception $e ) {
-		SS_Logger::write( '-- Exception -- ' . $e->getField() . ': ' . $e->getMessage() );
+        SS_Custom_Logger::write( '-- Exception -- ' . $e->getField() . ': ' . $e->getMessage() );
 		$order->set_status( 'failed' );
 		$order->save();
 

@@ -17,6 +17,8 @@ $('#productpage-splash').on('click', '.new-add-to-cart', function(e) {
 
   var id = $( this ).data( 'id' );
 
+  //product added as subscription instead of selected one -
+  //for example startersets shouldn't be ordered as subscription but only refill for them
   var otherRecurringProductId = $("input[name='op-id']").val();
   var purchase_type = $("input[name='type-aankoop']:checked").val();
   var subscription = 0;
@@ -31,8 +33,8 @@ $('#productpage-splash').on('click', '.new-add-to-cart', function(e) {
   //$( '#overlay-loader' ).show();
   var quantity = $( this ).closest( '.bestel-directly' ).find( '[name="quantity"]' ).val();
 
-  // console.log(purchase_type);
-  // console.log(id);
+   //console.log(otherRecurringProductId);
+   //console.log({ id: id , quantity: quantity, subscription: subscription});
   // console.log(quantity);
 
   var userToken = getUserToken();
@@ -74,7 +76,7 @@ function getCartFromAPI() {
       cartProducts = response.data.products;
       cartSubscriptions = response.data.subscriptions;
       order = response.data.order;
-console.log(response.data);
+//console.log(response.data);
       renderCart(cartProducts, cartSubscriptions);
 
       $('#dropdown-price').text(order.total / 100);
@@ -130,7 +132,7 @@ function getProductHtml(product, index,) {
                         </p>
           						</div>
                       <div class="col-3">
-                        <a data-id="${product.id}" data-array-id="${index}" class="btn-remove-drop" style="float: right; cursor: pointer"><i class="fa fa-trash"></i></a>
+                        <a data-id="${product.order_detail_id}" data-array-id="${index}" class="btn-remove-drop" style="float: right; cursor: pointer"><i class="fa fa-trash"></i></a>
                       </div>
                     </div>
                   </div>
@@ -161,7 +163,7 @@ function getSubscriptionHtml(product, index) {
                         </div>
           						</div>
                       <div class="col-3">
-                        <a data-id="${product.id}" data-sub-array-id="${index}" class="btn-remove-sub-drop" style="float: right; cursor: pointer"><i class="fa fa-trash"></i></a>
+                        <a data-id="${product.order_detail_id}" data-sub-array-id="${index}" class="btn-remove-sub-drop" style="float: right; cursor: pointer"><i class="fa fa-trash"></i></a>
                       </div>
                     </div>
                   </div>
@@ -182,12 +184,13 @@ var dropdownProduct = $('.dropdown-products');
 dropdownProduct.on('click', '.counter-minus', function() {
   console.log('counter-minus');
 
+  //console.log(cartProducts);
   var id = $(this).closest('.drop-prod').attr("data-id");
   console.log(id);
 
   if(cartProducts[id].quantity > 1) {
     var userToken = getUserToken();
-    var url = `${apiUrl}${userToken}/product/${cartProducts[id].id}/decreaseAmount`;
+    var url = `${apiUrl}${userToken}/product/${cartProducts[id].order_detail_id}/decreaseAmount`;
 
     $.ajax({
       url: url,
@@ -198,7 +201,7 @@ dropdownProduct.on('click', '.counter-minus', function() {
         console.log(result);
       },
       error: function(request,msg,error) {
-        console.log(result);
+        console.log(error);
       }
     });
 
@@ -219,11 +222,10 @@ dropdownProduct.on('click', '.counter-plus', function() {
   console.log('counter-plus');
   //console.log(cartProducts);
   var id = $(this).closest('.drop-prod').attr("data-id");
-  console.log(id);
 
   if(cartProducts[id].quantity > 0) {
     var userToken = getUserToken();
-    var url = `${apiUrl}${userToken}/product/${cartProducts[id].id}/increaseAmount`;
+    var url = `${apiUrl}${userToken}/product/${cartProducts[id].order_detail_id}/increaseAmount`;
 
     $.ajax({
       url: url,
@@ -234,7 +236,7 @@ dropdownProduct.on('click', '.counter-plus', function() {
         console.log(result);
       },
       error: function(request,msg,error) {
-        console.log(result);
+        console.log(error);
       }
     });
 
@@ -250,14 +252,14 @@ dropdownProduct.on('click', '.counter-plus', function() {
   }
 });
 
-
+//single product delete
 dropdownProduct.on('click', '.btn-remove-drop', function() {
   var arrayId = $(this).attr("data-array-id");
-  var id = $(this).attr("data-id");
-  console.log('click delete  ' + id);
+  var order_detail_id = $(this).attr("data-id");
+  //console.log('click delete  ' + id);
 
   var userToken = getUserToken();
-  var url = `${apiUrl}${userToken}/product/${id}`;
+  var url = `${apiUrl}${userToken}/product/${order_detail_id}`;
 
   $.ajax({
     url: url,
@@ -277,7 +279,7 @@ dropdownProduct.on('click', '.btn-remove-drop', function() {
       $('#dropdown-price').text(result.data.total / 100);
     },
     error: function(request,msg,error) {
-      console.log(result);
+      console.log(error);
     }
   });
 
@@ -292,7 +294,7 @@ dropdownProduct.on('click', '.counter-sub-minus', function() {
 
   if(cartSubscriptions[id].quantity > 1) {
     var userToken = getUserToken();
-    var url = `${apiUrl}${userToken}/product/${cartSubscriptions[id].id}/decreaseAmount`;
+    var url = `${apiUrl}${userToken}/product/${cartSubscriptions[id].order_detail_id}/decreaseAmount`;
 
     $.ajax({
       url: url,
@@ -303,7 +305,7 @@ dropdownProduct.on('click', '.counter-sub-minus', function() {
         console.log(result);
       },
       error: function(request,msg,error) {
-        console.log(result);
+        console.log(error);
       }
     });
 
@@ -328,7 +330,7 @@ dropdownProduct.on('click', '.counter-sub-plus', function() {
 
   if(cartSubscriptions[id].quantity > 0) {
     var userToken = getUserToken();
-    var url = `${apiUrl}${userToken}/product/${cartSubscriptions[id].id}/increaseAmount`;
+    var url = `${apiUrl}${userToken}/product/${cartSubscriptions[id].order_detail_id}/increaseAmount`;
 
     $.ajax({
       url: url,
@@ -339,7 +341,7 @@ dropdownProduct.on('click', '.counter-sub-plus', function() {
         console.log(result);
       },
       error: function(request,msg,error) {
-        console.log(result);
+        console.log(error);
       }
     });
 
@@ -355,7 +357,7 @@ dropdownProduct.on('click', '.counter-sub-plus', function() {
   }
 });
 
-
+//subscriptions delete
 dropdownProduct.on('click', '.btn-remove-sub-drop', function() {
   var arrayId = $(this).attr("data-sub-array-id");
   var id = $(this).attr("data-id");
@@ -382,7 +384,7 @@ dropdownProduct.on('click', '.btn-remove-sub-drop', function() {
       $(`.drop-prod-sub[data-id=${arrayId}]`).remove();
     },
     error: function(request,msg,error) {
-      console.log(result);
+      console.log(error);
     }
   });
 
