@@ -1532,6 +1532,7 @@ class Cart extends CustomPostType {
     }
 
     public static function ajax_place_external_order() {
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'ajax_place_external_order' .PHP_EOL, FILE_APPEND);
         $out = array(
             'status' => 'error',
             'message' => __( 'Could not place order', 'shaversclub-store' ),
@@ -1553,13 +1554,15 @@ class Cart extends CustomPostType {
         foreach ( $required as $key => $label ) {
             if( ! isset( $_POST[ $key ] ) || empty( trim( $_POST[ $key ] ) ) ) {
                 $out[ 'message' ] = sprintf(__( '"%s" is a mandatory field', 'shaversclub-store' ), $label );
+
+                file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode($out) .PHP_EOL, FILE_APPEND);
                 wp_die( json_encode( $out ) );
             }
         }
 
         $customerId = null;
         if(!empty($_POST[ 'wp_user_id' ])) {
-            $customerId = (int)$_POST[ 'wp_user_id' ];
+            $customerId = intval($_POST[ 'wp_user_id' ]);
         }
 
         $customer = new Customer($customerId);
@@ -1597,6 +1600,7 @@ class Cart extends CustomPostType {
 
         SS_Logger::write( 'Cart:ajax_place_order' );
         SS_Logger::write( $customer );
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode((array) $customer) . PHP_EOL, FILE_APPEND );
 
         $campaign_used = $campaign && $customer->is_used_coupon( $_POST[ 'coupon' ] );
 
@@ -1630,10 +1634,11 @@ class Cart extends CustomPostType {
             $products[] = $product;
         }
 
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode((array) $products). PHP_EOL, FILE_APPEND );
         if( $_POST['subscriptions']) {
+            file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'subscriptions---'. PHP_EOL, FILE_APPEND );
             $subscription = new Subscription;
 
-            $products = [];
             foreach( $_POST['subscriptions'] as $key => $id ) {
                 $product = \Product::get( $id );
 
@@ -1641,9 +1646,12 @@ class Cart extends CustomPostType {
                     continue;
                 }
                 $subscription->add_initial_product( $product );
+
+                //file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode((array) $subscription). PHP_EOL, FILE_APPEND );
+                $result = self::subscription($subscription, $campaign_used, $campaign, $customer);
+                $order = $result->to_order( true );
             }
 
-            self::subscription($subscription, $campaign_used, $campaign, $customer);
         }
 
         if( empty( $products ) && empty($subscription)) {
@@ -1779,7 +1787,6 @@ class Cart extends CustomPostType {
 
     private static function subscription($subscription, $campaign_used, $campaign, $customer)
     {
-        $order = false;
         $subscription->clear_campaigns( true );
         $subscription->set_payment( $_POST[ 'payment' ] );
         $subscription->set_customer( $customer );
@@ -1857,10 +1864,7 @@ class Cart extends CustomPostType {
         }
 
         $subscription->save();
-        $order = $subscription->to_order( true );
 
-        SS_Logger::write( $subscription );
-
-        return $order;
+        return $subscription;
     }
 }
