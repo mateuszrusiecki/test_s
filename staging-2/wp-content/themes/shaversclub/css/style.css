@@ -1535,3 +1535,8 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
 .dropdown-products .drop-prod{
     padding: 8px 0;
 }
+
+.dropdown-products{
+    overflow: scroll;
+    height: 340px;
+}

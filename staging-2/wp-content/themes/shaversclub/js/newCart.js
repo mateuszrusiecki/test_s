@@ -101,8 +101,29 @@ function renderCart(products, subscriptions) {
     item_html_new += `<p id="services-label" class="pl-3" style="font-family: 'TheWave-DBd';">Services</p>`;
   }
 
+  //prepare subscriptions to display - gatter together subscriptions for one product and display with quantity
+  var joinedSubscriptions = {};
   subscriptions.forEach((product, index) => {
-    item_html_new += getSubscriptionHtml(product, index);
+    if(product.sop_related_id in joinedSubscriptions) {
+      joinedSubscriptions[product.sop_related_id].quantity += 1;
+    } else {
+      joinedSubscriptions[product.sop_related_id] = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        main_img: product.main_img,
+        order_detail_id: product.order_detail_id,
+        quantity: product.quantity,
+        sop_related_id: product.sop_related_id,
+      }
+    }
+  });
+
+  console.log(joinedSubscriptions);
+
+
+  Object.keys(joinedSubscriptions).forEach((key) => {
+    item_html_new += getSubscriptionHtml(joinedSubscriptions[key], key);
   });
 
   $( '.dropdown-products' ).append( item_html_new );
@@ -123,7 +144,7 @@ function getProductHtml(product, index,) {
                       <div class="col-9 p-0" style="display:flex;">
                         <div class="handle-counter align-self-center" style="border: 0px;">
                               <button class="counter-minus btn btn-primary">-</button>
-                              <input type="text" id="quantity-${product.id}" class="quantity" value="${product.quantity}">
+                              <input type="text" id="quantity-${product.order_detail_id}" class="quantity" value="${product.quantity}">
                               <button class="counter-plus btn btn-primary">+</button>
                         </div>
                         <p style="padding: 8px; font-size: 20px;">
@@ -158,7 +179,7 @@ function getSubscriptionHtml(product, index) {
                       <div class="col-9 p-0" style="display:flex;">
                         <div class="handle-counter align-self-center" style="border: 0px;">
                               <button class="counter-sub-minus btn btn-primary">-</button>
-                              <input type="text" id="quantity-${product.id}" class="quantity" value="${product.quantity}">
+                              <input type="text" id="quantity-${product.order_detail_id}" class="quantity" value="${product.quantity}">
                               <button class="counter-sub-plus btn btn-primary">+</button>
                         </div>
           						</div>
