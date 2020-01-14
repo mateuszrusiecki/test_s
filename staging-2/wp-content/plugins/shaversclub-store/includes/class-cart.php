@@ -1532,7 +1532,8 @@ class Cart extends CustomPostType {
     }
 
     public static function ajax_place_external_order() {
-        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'ajax_place_external_order' .PHP_EOL, FILE_APPEND);
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', '--->ajax_place_external_order'. date('Y-m-d H:i:s') .PHP_EOL, FILE_APPEND);
+
         $out = array(
             'status' => 'error',
             'message' => __( 'Could not place order', 'shaversclub-store' ),
@@ -1549,7 +1550,6 @@ class Cart extends CustomPostType {
             'payment' => __( 'Payment', 'shaversclub-store' ),
         ];
 
-        //wp_die( json_encode( $required ) );
 
         foreach ( $required as $key => $label ) {
             if( ! isset( $_POST[ $key ] ) || empty( trim( $_POST[ $key ] ) ) ) {
@@ -1632,40 +1632,12 @@ class Cart extends CustomPostType {
 
             $product->quantity = $_POST['quantities'][$key];
             $products[] = $product;
+            $order->add_product( $product );
         }
 
-        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode((array) $products). PHP_EOL, FILE_APPEND );
-        if( $_POST['subscriptions']) {
-            file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'subscriptions---'. PHP_EOL, FILE_APPEND );
-            $subscription = new Subscription;
-
-            foreach( $_POST['subscriptions'] as $key => $id ) {
-                $product = \Product::get( $id );
-
-                if( ! $product ) {
-                    continue;
-                }
-                $subscription->add_initial_product( $product );
-
-                //file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode((array) $subscription). PHP_EOL, FILE_APPEND );
-                $result = self::subscription($subscription, $campaign_used, $campaign, $customer);
-                $order = $result->to_order( true );
-            }
-
-        }
-
-        if( empty( $products ) && empty($subscription)) {
+        if( empty( $products )) {
             $out['message'] = __( 'Could not place order, cart is empty', 'shaversclub-store' );
             wp_die( json_encode( $out ) );
-        }
-
-        if( ! empty($products) ) {
-            foreach( $products as $product ) {
-                if( isset( $order->products[ $product->ID ] ) ) {
-                    $product->quantity += $order->products[ $product->ID ];
-                }
-                $order->add_product( $product );
-            }
         }
 
         if( ! $campaign_used ) {
@@ -1682,14 +1654,21 @@ class Cart extends CustomPostType {
             'post_author' => $customerId
         ]);
 
-        //wp_die( json_encode( $method ) );
         SS_Logger::write( $order );
-
 
         $out = array(
             'status' => 'success',
             'order_id' => $order->ID,
         );
+
+        if( $_POST['subscriptions']) {
+            //file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', '-->subscriptions'. PHP_EOL, FILE_APPEND );
+            foreach( $_POST['subscriptions'] as $key => $sub ) {
+                self::subscription($sub, $campaign_used, $campaign, $customer);
+            }
+
+        }
+
 
         ////$out[ 'form' ] = $order->make_adyen_form();
 
@@ -1785,17 +1764,34 @@ class Cart extends CustomPostType {
         return $order;
     }
 
-    private static function subscription($subscription, $campaign_used, $campaign, $customer)
+    /**
+     * @param $subData
+     * @param $campaign_used
+     * @param $campaign
+     * @param $customer
+     * @return mixed
+     * @throws Exception
+     */
+    private static function subscription($subData, $campaign_used, $campaign, $customer)
     {
+        $product = \Product::get( $subData['id'] );
+        if( ! $product ) {
+            return false;
+        }
+
+        $subscription = new Subscription;
+        $subscription->add_initial_product( $product );
         $subscription->clear_campaigns( true );
         $subscription->set_payment( $_POST[ 'payment' ] );
         $subscription->set_customer( $customer );
+        $subscription->set_interval($subData['frequency'] . ' months'); //<---
         //		$subscription->activate();
-        $subscription->next_order = new DateTime;
+        $shippingDate = new DateTime;
+        $shippingDate->modify( '+' . $subscription->get_interval_in_weeks() . 'weeks' );
+        $subscription->next_order = HelperFunctions::get_next_dow($shippingDate);
 
-        if( ! $campaign_used ) {
-
-            if( $campaign ) {
+        if( !$campaign_used) {
+            if($campaign) {
                 $campaign->remove_coupon( $_POST[ 'coupon' ] );
                 $campaign->save();
                 $subscription->add_campaign( $campaign, true );
@@ -1856,15 +1852,13 @@ class Cart extends CustomPostType {
             }
         }
 
-        if( $subscription->has_post() ) {
-            $orders = $subscription->get_orders(-1); // kan er max 1 zijn
-            foreach ( $orders as $o ) {
-                wp_trash_post( $o->ID );
-            }
-        }
-
         $subscription->save();
 
-        return $subscription;
+        $order = $subscription->to_order( true );
+        $order->save([
+            'post_status' => 'pending'
+        ]);
+
+        return true;
     }
 }
