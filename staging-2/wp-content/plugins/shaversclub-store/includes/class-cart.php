@@ -1532,7 +1532,7 @@ class Cart extends CustomPostType {
     }
 
     public static function ajax_place_external_order() {
-        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', '--->ajax_place_external_order'. date('Y-m-d H:i:s') .PHP_EOL, FILE_APPEND);
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', PHP_EOL . '->ajax_place_external_order<-'. date('Y-m-d H:i:s') .PHP_EOL, FILE_APPEND);
 
         $out = array(
             'status' => 'error',
@@ -1565,7 +1565,9 @@ class Cart extends CustomPostType {
             $customerId = intval($_POST[ 'wp_user_id' ]);
         }
 
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'wp user id: '.$customerId . PHP_EOL, FILE_APPEND );
         $customer = new Customer($customerId);
+        $customer->ID = $customerId;
         $customer->set_first_name( $_POST[ 'first_name' ] );
         $customer->set_last_name( $_POST[ 'last_name' ] );
 
@@ -1590,7 +1592,6 @@ class Cart extends CustomPostType {
         $customer->save();
 
         $order = new SS_Order;
-        $order->set_customer($customer);
 
         $campaign = Campaign::query_one( array(
             'meta_key' => 'cc_' . $_POST[ 'coupon' ],
@@ -1600,7 +1601,6 @@ class Cart extends CustomPostType {
 
         SS_Logger::write( 'Cart:ajax_place_order' );
         SS_Logger::write( $customer );
-        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode((array) $customer) . PHP_EOL, FILE_APPEND );
 
         $campaign_used = $campaign && $customer->is_used_coupon( $_POST[ 'coupon' ] );
 
@@ -1654,6 +1654,7 @@ class Cart extends CustomPostType {
             'post_author' => $customerId
         ]);
 
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'order id: ' . $order->ID . PHP_EOL, FILE_APPEND );
         SS_Logger::write( $order );
 
         $out = array(
@@ -1662,15 +1663,12 @@ class Cart extends CustomPostType {
         );
 
         if( $_POST['subscriptions']) {
-            //file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', '-->subscriptions'. PHP_EOL, FILE_APPEND );
             foreach( $_POST['subscriptions'] as $key => $sub ) {
                 self::subscription($sub, $campaign_used, $campaign, $customer);
             }
 
         }
 
-
-        ////$out[ 'form' ] = $order->make_adyen_form();
 
         //$out = $order->make_mollie_payment();
 
@@ -1782,15 +1780,13 @@ class Cart extends CustomPostType {
         $subscription = new Subscription;
         $subscription->add_initial_product( $product );
         $subscription->clear_campaigns( true );
-        $subscription->set_payment( $_POST[ 'payment' ] );
+        $subscription->set_payment( $_POST['payment'] );
         $subscription->set_customer( $customer );
-        $subscription->set_interval($subData['frequency'] . ' months'); //<---
+        $subscription->set_interval($subData['frequency'] . ' months');
         //		$subscription->activate();
-        $shippingDate = new DateTime;
-        $shippingDate->modify( '+' . $subscription->get_interval_in_weeks() . 'weeks' );
-        $subscription->next_order = HelperFunctions::get_next_dow($shippingDate);
+        $subscription->next_order = new \DateTime($subData['start_date']);
 
-        if( !$campaign_used) {
+        if( !$campaign_used && $_POST['coupon']) {
             if($campaign) {
                 $campaign->remove_coupon( $_POST[ 'coupon' ] );
                 $campaign->save();
@@ -1811,6 +1807,7 @@ class Cart extends CustomPostType {
                     ),
                 ) );
 
+                file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', '$old_sub: ' . json_encode($old_sub). PHP_EOL, FILE_APPEND );
                 SS_Logger::write( $old_sub );
 
                 if( $old_sub && ( $old_ac = $old_sub->meta('active_campaign') ) ) {
@@ -1855,6 +1852,8 @@ class Cart extends CustomPostType {
         $subscription->save();
 
         $order = $subscription->to_order( true );
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'sub id ' . $subscription->ID . PHP_EOL, FILE_APPEND );
+
         $order->save([
             'post_status' => 'pending'
         ]);

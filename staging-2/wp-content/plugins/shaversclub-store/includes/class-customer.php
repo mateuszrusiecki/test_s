@@ -443,7 +443,7 @@ class Customer {
 			if( in_array( $key, array( 'session_tokens' ) ) ) {
 				continue;
 			}
-			update_user_meta( $this->user->ID, $key, $value ); //$this->meta( $key ) );
+			update_user_meta( $this->ID, $key, $value ); //$this->meta( $key ) );
 		}
 		return wp_update_user( array( 'ID' => $this->ID, 'user_email' => $this->user_email ) );
 	}
