@@ -1657,18 +1657,19 @@ class Cart extends CustomPostType {
         file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'order id: ' . $order->ID . PHP_EOL, FILE_APPEND );
         SS_Logger::write( $order );
 
+
+        $subscriptions = [];
+        if( $_POST['subscriptions']) {
+            foreach( $_POST['subscriptions'] as $key => $sub ) {
+                $subscriptions[] = self::subscription($sub, $campaign_used, $campaign, $customer);
+            }
+        }
+
         $out = array(
             'status' => 'success',
             'order_id' => $order->ID,
+            'subscriptions' => $subscriptions
         );
-
-        if( $_POST['subscriptions']) {
-            foreach( $_POST['subscriptions'] as $key => $sub ) {
-                self::subscription($sub, $campaign_used, $campaign, $customer);
-            }
-
-        }
-
 
         //$out = $order->make_mollie_payment();
 
@@ -1857,7 +1858,8 @@ class Cart extends CustomPostType {
         $order->save([
             'post_status' => 'pending'
         ]);
+        $subData['wp_order_id'] = $order->ID;
 
-        return true;
+        return $subData;
     }
 }
