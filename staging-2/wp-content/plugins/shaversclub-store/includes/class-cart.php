@@ -1779,7 +1779,8 @@ class Cart extends CustomPostType {
         }
 
         $subscription = new Subscription;
-        $subscription->add_initial_product( $product );
+        //$subscription->add_initial_product( $product );
+        $subscription->add_recurring_product( $product );
         $subscription->clear_campaigns( true );
         $subscription->set_payment( $_POST['payment'] );
         $subscription->set_customer( $customer );
