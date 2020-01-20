@@ -583,6 +583,7 @@ class Customer {
 		add_action( 'wp_ajax_ss_edit_customer_second', array( 'Customer', 'ajax_edit_customer_second' ) );
 
         add_action( 'wp_ajax_nopriv_ss_external_register', array( 'Customer', 'ajax_external_register' ) );
+        add_action( 'wp_ajax_nopriv_external_register', array( 'Customer', 'ajax_external_register' ) );
 	}
 
 
@@ -1301,6 +1302,7 @@ class Customer {
      */
     public static function ajax_external_register() {
 
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', PHP_EOL.'register ' . PHP_EOL, FILE_APPEND );
         $out = array(
             'status' => 'error',
         );
@@ -1308,6 +1310,8 @@ class Customer {
         //wp_die( json_encode( $_SESSION["HTTP_REFERER"] ) );
 
         SS_Logger::write( 'Customer:ajax_external_register' );
+
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode($_POST) . PHP_EOL, FILE_APPEND );
 
         if( isset( $_POST['email'], $_POST['password'] ) ) {
             SS_Logger::write( $_POST['email'] );
@@ -1343,7 +1347,6 @@ class Customer {
                     do_action( 'wp_login', $user->user_login );
 
                     $customer = new Customer( $user );
-                    // $customer->make_ref();
 
                     if( isset( $_POST[ 'first_name' ] ) ) {
                         $customer->set_first_name( $_POST[ 'first_name' ] );
@@ -1366,6 +1369,8 @@ class Customer {
                             'name' => $user->display_name,
                             'first_name' => $customer->meta( 'first_name' ),
                             'last_name' => $customer->meta( 'last_name' ),
+                            'id' => $customer->ID,
+                            'refCode' => $customer->ss_ref
                         ),
                     );
                 } else {
