@@ -856,10 +856,6 @@ class Cart extends CustomPostType {
                 setcookie('wp_user_token', bin2hex($random), time() + $cookieExpire, '/', '.shaversclub.nl');
             }
 
-            //$url = 'http://localhost:8073/api/cart';
-            //$url = 'http://136.144.214.107/api/cart';
-            $url = 'https://shop.shaversclub.nl/api/cart';
-
             $data = [
                 "id" => $_POST['id'],
                 "quantity" => $_POST['quantity'],
@@ -868,7 +864,7 @@ class Cart extends CustomPostType {
             ];
 
             $curl = curl_init();
-            curl_setopt($curl, CURLOPT_URL, $url);
+            curl_setopt($curl, CURLOPT_URL, API_URL);
             curl_setopt($curl, CURLOPT_POST, 1);
             curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
 
@@ -1510,13 +1506,15 @@ class Cart extends CustomPostType {
         //users 18834
         $start = 0;
         $stop = 1000;
-        //for($i=0; $i<=19; $i++) {
+        $usersStack = [];
+        for($i=1; $i<=2; $i++) {
             $users = $wpdb->get_results("SELECT * FROM wpstg0_users LIMIT $start,$stop");
             $sql = 'INSERT INTO `users` (`email`, `password`, `created_at`, `user_status`, `wp_user_id`) VALUES' . PHP_EOL;
             $j=0;
+
             if ($users) {
                 foreach ($users as $user) {
-                    $sql .= "('{$user->user_email}', '{$user->user_pass}', '{$user->user_registered}', {$user->user_status}, {$user->ID})," . PHP_EOL;
+                    $sql .= "('{$user->user_email}', '{$user->user_pass}', '{$user->user_registered}', 1, {$user->ID})," . PHP_EOL;
                 }
                 if($j == 200 || $j == 400 || $j == 800) {
                     $sql .= 'INSERT INTO `users` (`email`, `password`, `created_at`, `user_status`, `wp_user_id`) VALUES' . PHP_EOL;
@@ -1526,8 +1524,8 @@ class Cart extends CustomPostType {
             $start += 1000;
             $stop += 1000;
 
-            file_put_contents( SS_PATH . 'includes/uexport/ugroup_' . $i . '.sql', $sql );
-        //}
+            file_put_contents( SS_PATH . 'includes/uexport/ugroup_start_' . $start .'_stop_'. $stop. '.sql', $sql );
+        }
         wp_die( json_encode( ['ajax_export_users'] ) );
     }
 
@@ -1857,7 +1855,7 @@ class Cart extends CustomPostType {
         file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'sub id ' . $subscription->ID . PHP_EOL, FILE_APPEND );
 
         $order->save([
-            'post_status' => 'pending'
+            'post_status' => 'upcoming'
         ]);
         $subData['wp_order_id'] = $order->ID;
 

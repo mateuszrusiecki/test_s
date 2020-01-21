@@ -11,6 +11,7 @@ scripts/
 
 
 /staging-2/*
+!/staging-2/wp-config.php
 !/staging-2/wp-content/
 /staging-2/wp-content/*
 !/staging-2/wp-content/plugins/
