@@ -57,7 +57,7 @@ function getCart() {
   if(cartProducts.length > 0) {
     console.log('render from cache');
     renderCart(cartProducts, cartSubscriptions);
-    $('#dropdown-price').text(order.total / 100);
+    $('#dropdown-price').text(formatPrice(order.total / 100));
 
     return;
   }
@@ -79,7 +79,7 @@ function getCartFromAPI() {
 //console.log(response.data);
       renderCart(cartProducts, cartSubscriptions);
 
-      $('#dropdown-price').text(order.total / 100);
+      $('#dropdown-price').text((order.total / 100));
     }
   });
 }
@@ -90,7 +90,7 @@ function renderCart(products, subscriptions) {
   var item_html_new = '';
 
   if(products.length > 0) {
-    item_html_new += `<p id="single-products-label" class="pl-3" style="font-family: 'TheWave-DBd';">Losse artikelen</p>`;
+    item_html_new += `<p id="single-products-label" class="pl-3" style="font-family: 'TheWave-Bd';">Losse artikelen</p>`;
   }
 
   products.forEach((product, index) => {
@@ -98,7 +98,7 @@ function renderCart(products, subscriptions) {
   });
 
   if(subscriptions.length > 0) {
-    item_html_new += `<p id="services-label" class="pl-3" style="font-family: 'TheWave-DBd';">Services</p>`;
+    item_html_new += `<p id="services-label" class="pl-3" style="font-family: 'TheWave-Bd';">Services</p>`;
   }
 
   //prepare subscriptions to display - gatter together subscriptions for one product and display with quantity
@@ -139,7 +139,7 @@ function getProductHtml(product, index,) {
                      <img src="${product.main_img}" class="img-responsive" />
                   </div>
                   <div class="col-9 align-self-center">
-                    <div><p style="font-family:'TheWave-DBd';"><span>${product.name}</span></p></div>
+                    <div><p><span class="product-name">${product.name.toLowerCase()}</span></p></div>
                     <div class="second-row" style="display:flex;">
                       <div class="col-9 p-0" style="display:flex;">
                         <div class="handle-counter align-self-center" style="border: 0px;">
@@ -149,7 +149,7 @@ function getProductHtml(product, index,) {
                         </div>
                         <p style="padding: 8px; font-size: 20px;">
                           <span style="color: #d45a1d;">&euro;</span>
-                          <span class="item-price" data-id="${index}" style="font-family:'TheWave-DBd';color: #d45a1d">${product.price * product.quantity / 100}</span>
+                          <span class="item-price" data-id="${index}" style="color: #d45a1d">${formatPrice(product.price * product.quantity / 100)}</span>
                         </p>
           						</div>
                       <div class="col-3">
@@ -174,7 +174,7 @@ function getSubscriptionHtml(product, index) {
                      <img src="${product.main_img}" class="img-responsive" />
                   </div>
                   <div class="col-9 align-self-center">
-                    <div><p style="font-family:'TheWave-DBd';"><span>${product.name}</span></p></div>
+                    <div><p><span>${product.name.toLowerCase()}</span></p></div>
                     <div class="second-row" style="display:flex;">
                       <div class="col-9 p-0" style="display:flex;">
                         <div class="handle-counter align-self-center" style="border: 0px;">
@@ -198,6 +198,25 @@ function getSubscriptionHtml(product, index) {
 function process_dropdown_cart() {
   console.log('process dropdown cart');
   getCartFromAPI();
+}
+
+function formatPrice(price) {
+  //is int
+  if(Number(price) === price && price % 1 === 0) {
+    return price + ',-';
+  }
+  //is float
+  if(Number(price) === price && price % 1 !== 0) {
+    var result = price.toLocaleString();
+    var split = result.split(',');
+    if(split[1].length === 1) {
+      result += '0';
+    }
+
+    return result;
+  }
+
+  return price;
 }
 
 var dropdownProduct = $('.dropdown-products');
@@ -234,7 +253,7 @@ dropdownProduct.on('click', '.counter-minus', function() {
     });
     $(`.item-price[data-id=${id}]`).text(cartProducts[id].price * cartProducts[id].quantity / 100);
 
-    $('#dropdown-price').text(order.total / 100);
+    $('#dropdown-price').text(formatPrice(order.total / 100));
   }
 
 });
@@ -269,7 +288,7 @@ dropdownProduct.on('click', '.counter-plus', function() {
     });
     $(`.item-price[data-id=${id}]`).text(cartProducts[id].price * cartProducts[id].quantity / 100);
 
-    $('#dropdown-price').text(order.total / 100);
+    $('#dropdown-price').text(formatPrice(order.total / 100));
   }
 });
 
@@ -297,7 +316,7 @@ dropdownProduct.on('click', '.btn-remove-drop', function() {
       }
 
       $(`.drop-prod[data-id=${arrayId}]`).remove();
-      $('#dropdown-price').text(result.data.total / 100);
+      $('#dropdown-price').text(formatPrice(order.total / 100));
     },
     error: function(request,msg,error) {
       console.log(error);
@@ -434,9 +453,8 @@ function setCookie(name,value) {
   date.setTime(date.getTime() + (days*24*60*60*1000));
   var expires = "; expires=" + date.toUTCString();
 
-  //document.cookie = name + "=" + (value || "")  + expires + "; path=/ domain=.shaversclub.nl";
-  document.cookie = name + "=" + (value || "")  + expires + "; path=/; domain=localhost";
-  console.log(name + "=" + (value || "")  + expires + "; path=/ domain=localhost");
+  //document.cookie = name + "=" + (value || "")  + expires + "; path=/; domain=shaversclub.nl";
+  document.cookie = name + "=" + (value || "")  + expires + ", path=/, domain=localhost";
 }
 
 function uuidv4() {

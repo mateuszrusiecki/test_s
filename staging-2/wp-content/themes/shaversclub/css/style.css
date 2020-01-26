@@ -1167,7 +1167,9 @@ transform: inherit;-ms-transform: inherit;-o-transform: inherit; background:url(
 /* productpagina style starts here */
 /* productpagina-banner */
 .productpagina-banner{position: absolute;bottom: 30px;left: 0;width: 100%;}
-.productpagina-banner-main{}
+.productpagina-banner-main{
+    margin-top: 30px;
+}
 .product-wrap{padding: 0 0 48px 0;}
 .product-lt{padding: 8px 30px 0 0;}
 .product-dtls{}
@@ -1397,7 +1399,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
     border-radius: 3px;
     display: block;
     position: relative;
-    width: 460px;
+    width: 415px;
 }
 
 .homedelivary li.type-aankoop .fal, .homedelivary li.type-aankoop .fas {
@@ -1406,7 +1408,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
     top: 0;
     font-size: 23px;
     color: #D45A1D;
-    padding: 0px 19px;
+    padding: 0px 17px;
 }
 
 .homedelivary li.type-aankoop-nalever .fal, .homedelivary li.type-aankoop-nalever .fas {
@@ -1437,6 +1439,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
 }
 .homedelivary li.type-aankoop-nalever {
     margin-bottom: 20px;
+    margin-top: 25px;
 }
 .homedelivary li.type-aankoop.active span {
     background-color: #fff;
@@ -1448,7 +1451,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
     float: left;
     font-size: 13px;
     font-weight: 100;
-    padding: 4px 75px 4px 60px;
+    padding: 4px 70px 4px 55px;
     margin-bottom: 0px;
     width: 100%;
 }
@@ -1490,7 +1493,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
 }
 
 .other-recurring-product {
-    width: 400px;
+    width: 375px;
     border: solid 3px #fff;
     border-radius: 3px;
     padding: 10px 0;
@@ -1507,7 +1510,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
 }
 .other-recurring-product .op-desc {
     color: #fff;
-    width: 280px;
+    width: 260px;
     padding: 14px 0 0 10px;
     font-size: 14px;
 }
@@ -1532,8 +1535,16 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
     margin-bottom: 8px;
     padding-bottom: 5px;
 }
-.dropdown-products .drop-prod{
-    padding: 8px 0;
+.dropdown-products .drop-prod, .dropdown-products .drop-prod-sub{
+    padding: 8px;
+}
+
+.dropdown-products .fa-trash{
+    color: #c3c3c3;
+}
+
+.drop-prod .second-row{
+    margin-top: 2px;
 }
 
 .dropdown-products{

@@ -99,10 +99,10 @@
 				    <br />
 				    <div class="row">
 					    <div class="col-8">
-						    <p class="pl-3" style="font-family: 'TheWave-DBd';">Totaal te betalen</p>
+						    <p class="pl-3" style="font-family: 'TheWave-Bd';">Totaal te betalen</p>
 					    </div>
 					    <div class="col-4">
-					    	<p class="dropdown-price" style="font-family: 'TheWave-DBd'; color: #d45a1d; float: right;margin-right: 15px;">&euro; <span id="dropdown-price"></span></p>
+					    	<p class="dropdown-price" style="font-family: 'TheWave-Bd'; color: #d45a1d; float: right;margin-right: 15px;">&euro;<span id="dropdown-price"></span></p>
 					    </div>
 					    <div class="col-12 text-center">
 <!--						    <a href="http://shop.shaversclub.nl/cart" class="set">Naar winkelmand</a>-->
