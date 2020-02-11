@@ -1,7 +1,8 @@
 var cartProducts = [];
 var cartSubscriptions = [];
 var order = [];
-var apiUrl = 'http://localhost:8073/api/cart/';
+//var apiUrl = 'http://localhost:8073/api/cart/';
+var apiUrl = 'http://vue.shavers.test/api/cart/';
 //var apiUrl = 'https://shop.shaversclub.nl/api/cart/';
 
 jQuery(".shop-new").on("click", function(){
@@ -90,6 +91,7 @@ function renderCart(products, subscriptions) {
   var item_html_new = '';
 
   if(products.length > 0) {
+    $('#drop-aantal').text(products.length);
     item_html_new += `<p id="single-products-label" class="pl-3" style="font-family: 'TheWave-Bd';">Losse artikelen</p>`;
   }
 
@@ -101,7 +103,7 @@ function renderCart(products, subscriptions) {
     item_html_new += `<p id="services-label" class="pl-3" style="font-family: 'TheWave-Bd';">Services</p>`;
   }
 
-  //prepare subscriptions to display - gatter together subscriptions for one product and display with quantity
+  //prepare subscriptions to display - gather together subscriptions for one product and display with quantity
   var joinedSubscriptions = {};
   subscriptions.forEach((product, index) => {
     if(product.sop_related_id in joinedSubscriptions) {
@@ -119,7 +121,6 @@ function renderCart(products, subscriptions) {
     }
   });
 
-  console.log(joinedSubscriptions);
 
 
   Object.keys(joinedSubscriptions).forEach((key) => {
@@ -147,7 +148,7 @@ function getProductHtml(product, index,) {
                               <input type="text" id="quantity-${product.order_detail_id}" class="quantity" value="${product.quantity}">
                               <button class="counter-plus btn btn-primary">+</button>
                         </div>
-                        <p style="padding: 8px; font-size: 20px;">
+                        <p class="drop-prod-price">
                           <span style="color: #d45a1d;">&euro;</span>
                           <span class="item-price" data-id="${index}" style="color: #d45a1d">${formatPrice(product.price * product.quantity / 100)}</span>
                         </p>
@@ -174,7 +175,7 @@ function getSubscriptionHtml(product, index) {
                      <img src="${product.main_img}" class="img-responsive" />
                   </div>
                   <div class="col-9 align-self-center">
-                    <div><p><span>${product.name.toLowerCase()}</span></p></div>
+                    <div><p><span class="product-name">${product.name.toLowerCase()}</span></p></div>
                     <div class="second-row" style="display:flex;">
                       <div class="col-9 p-0" style="display:flex;">
                         <div class="handle-counter align-self-center" style="border: 0px;">
@@ -454,7 +455,9 @@ function setCookie(name,value) {
   var expires = "; expires=" + date.toUTCString();
 
   //document.cookie = name + "=" + (value || "")  + expires + "; path=/; domain=shaversclub.nl";
-  document.cookie = name + "=" + (value || "")  + expires + ", path=/, domain=localhost";
+  //document.cookie = name + "=" + (value || "")  + expires + ", path=/, domain=localhost";
+  document.cookie = name + "=" + (value || "") + expires + ";path=/;domain=shavers.test";
+  //console.log(name + "=" + (value || "")  + expires + ", path=/, domain=shavers.test");
 }
 
 function uuidv4() {

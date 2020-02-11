@@ -11,6 +11,7 @@ while ( have_posts() ):
 
     the_post();
     $product = new Product( get_the_ID() );
+    $op = $product->get_other_recurring_product();
 
     $term_list = get_the_terms( $product->ID, 'product-tag' );
     $system;
@@ -30,10 +31,10 @@ while ( have_posts() ):
     }
     ?>
     <div id="productpage-splash" class="banner-in">
-        <figure>
+        <figure class="<?php if($op) echo 'figure-for-other-recurring-product' ?>">
             <!-- <img src="<?php echo ( get_template_directory_uri() ) . '/' ?>images/productpagina-banner.jpg" alt="banner" width="1600" height="800"> -->
         </figure>
-        <div class="productpagina-banner">
+        <div class="productpagina-banner <?php if($op) echo 'with-other-recurring-product' ?>">
             <div class="container">
                 <div class="productpagina-banner-main">
                     <div class="product-wrap d-flex flex-wrap">
@@ -58,49 +59,107 @@ while ( have_posts() ):
                                     }
                                     $thumbs[ $gallery_thumb[0] ] = $gallery_full[0];
                                 }
-                                $op = $product->get_other_recurring_product();
                                 ?>
                                 <div class="product-dtls">
-                                    <a href="javascript:void(0)">
+                                    <a class="product-url" href="javascript:void(0)">
                                         <figure>
                                             <img src="<?php echo $full[0]; ?>">
                                         </figure>
                                     </a>
+
+                                    <div>
+                                        <?php /*echo do_shortcode( '[gallery ids="' . $image_gallery_ids . '" link="file" columns="0"]' );*/ ?>
+                                        <ul class="slider-nav">
+                                            <?php foreach( $thumbs as $thumb => $full ): ?>
+                                                <li>
+                                                    <a href="<?php echo $full; ?>" class="thickbox" rel="gallery">
+                                                        <figure>
+                                                            <img src="<?php echo $thumb; ?>" height="100">
+                                                        </figure>
+                                                    </a>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                        <div class="clearfix"></div>
+                                    </div>
                                     <div class="product-rt d-md-none">
                                         <h2><?php the_title(); ?></h2>
                                         <h4><?php echo $product->meta( 'product_line' ); ?> <?php echo $product->meta( 'subline' ); ?></h4>
+
                                         <div class="homedelivary">
                                             <ul>
-                                                <li><em><?php echo $product->get_price( true ); ?></em></li>
-                                                <li><span><?php echo $shipping_price_text; ?></span></li>
+                                                <?php
+                                                $is_serviceable = get_post_meta( $post->ID, 'is_serviceable', true );
+                                                if($is_serviceable) { ?>
+                                                    <li class="type-aankoop-click type-aankoop type-aankoop-nalever active">
+                                                        <input type="radio" name="type-aankoop" value="nalever" id="type-aankoop-nalever-1" checked>
+                                                        <i class="fas fa-check-circle"></i>
+                                                        <i class="fal fa-circle"></i>
+
+                                                        <label for="type-aankoop-nalever">
+                                                            <b>Met ShaversClub Naleverservice</b>
+                                                            <br/>Bepaal zelf wanneer en om de hoeveel tijd jouw nieuwe mesjes geleverd worden.
+                                                            <br/>Je zit nergens aan vast.
+                                                        </label>
+                                                        <span>
+                                                    €<?php echo $product->get_price( false ); ?>
+                                                </span>
+
+                                                    </li>
+                                                    <li class="type-aankoop-click type-aankoop type-aankoop-eenmalig">
+                                                        <input type="radio" name="type-aankoop" value="eenmalig" id="type-aankoop-eenmalig-1">
+                                                        <i class="fas fa-check-circle"></i>
+                                                        <i class="fal fa-circle"></i>
+
+                                                        <label for="type-aankoop-eenmalig"><b>Eenmalig bestellen</b></label>
+
+                                                        <span>
+                                                    €<?php echo $product->get_price( false) + 2; ?>
+                                                </span>
+                                                    </li>
+                                                <?php } ?>
+                                                <?php
+                                                //if( $op ) {
+                                                //echo '<li class="like-h4">' . $product->meta( 'product_line' ) . ' Navullingen:</li>';
+                                                //echo '<li><a href="' . get_permalink( $op->ID ) . '" class="set meest">' . get_the_title( $op->ID ) . ' - (' . $op->get_price( true ) . ')</a></li>';
+                                                //} ?>
                                             </ul>
                                         </div>
-                                        <?php if( $op ): ?>
-                                            <div class="homedelivary homedelivary-2">
-                                                <ul>
-                                                    <li class="like-h4"><?php echo $product->meta( 'product_line' ); ?> Navullingen:</li>
-                                                    <li><a href="<?php echo get_permalink( $op->ID ); ?>" class="set meest"><?php echo get_the_title( $op->ID ) . ' - (' . $op->get_price( true ) . ')'; ?></a></li>
-                                                </ul>
-                                            </div>
-                                        <?php endif; ?>
 
+                                        <div class="bestel-directly">
+                                            <ul class="d-flex flex-wrap">
+                                                <li><input value="1" name="quantity" class="handleCounter"></li>
+                                                <!--<li><a href="javascript:;" data-id="<?php echo $product->ID; ?>" class="set add-to-cart">Bestel direct!</a></li>-->
+                                                <li><a href="javascript:;" data-id="<?php echo $product->ID; ?>" class="set new-add-to-cart">Bestel direct!</a></li>
+                                                <li class="shipping-price-label"><span class="grey-light"><?php echo $shipping_price_text; ?></span></li>
+                                            </ul>
+                                        </div>
+
+                                        <?php
+                                        if($op) {
+                                            echo '<div class="other-recurring-product d-flex flex-wrap">';
+                                            $opImages = wp_get_attachment_image_src( get_post_thumbnail_id( $op->ID ) );
+                                            $opImg = '';
+                                            if(isset($opImages[0])) {
+                                                $opImg = $opImages[0];
+                                            }
+                                            //var_dump($op);
+                                            $title = get_the_title( $op->ID );
+
+                                            echo '<input type="hidden" name="op-id" id="op-id" value="'. $op->ID .'" />';
+
+                                            echo "<div class='op-img'><img style='min-height: 1px' src='$opImg' alt='$title' /></div>";
+                                            //$op->meta( 'subline' )
+                                            echo '<div class="op-desc">';
+                                            echo '<span><b>Dit is de ' .$op->meta( 'product_line' ). ' navulling</b></span>';
+                                            echo '<span class="grey-light">'. $title .' voor €'. $op->get_price() .'</span>';
+                                            echo '<span class="grey-light"><a href=" '. get_permalink( $op->ID ) .'" class="">Klik hier</a> om ze direct te bestellen </span>';
+                                            echo '</div>';
+                                            echo '</div>';
+                                        }
+                                        ?>
                                     </div>
                                 </div>
-                            </div>
-                            <div>
-                                <?php /*echo do_shortcode( '[gallery ids="' . $image_gallery_ids . '" link="file" columns="0"]' );*/ ?>
-                                <ul class="slider-nav">
-                                    <?php foreach( $thumbs as $thumb => $full ): ?>
-                                        <li>
-                                            <a href="<?php echo $full; ?>" class="thickbox" rel="gallery">
-                                                <figure>
-                                                    <img src="<?php echo $thumb; ?>" height="100">
-                                                </figure>
-                                            </a>
-                                        </li>
-                                    <?php endforeach; ?>
-                                </ul>
-                                <div class="clearfix"></div>
                             </div>
                         </div>
                         <div class="product-rt d-none d-md-block col-md-6">
@@ -108,13 +167,11 @@ while ( have_posts() ):
                             <h4><?php echo $product->meta( 'product_line' ); ?> <span><?php echo $product->meta( 'subline' ); ?></span></h4>
                             <div class="homedelivary">
                                 <ul>
-                                    <!--									<li><em>--><?php //echo $product->get_price( true ); ?><!--</em></li>-->
-
                                     <?php
                                     $is_serviceable = get_post_meta( $post->ID, 'is_serviceable', true );
                                     if($is_serviceable) { ?>
                                         <li class="type-aankoop type-aankoop-nalever active">
-                                            <input type="radio" name="type-aankoop" value="nalever" id="type-aankoop-nalever" checked>
+                                            <input type="radio" name="type-aankoop" value="nalever" id="type-aankoop-nalever-2" checked>
                                             <i class="fas fa-check-circle"></i>
                                             <i class="fal fa-circle"></i>
 
@@ -129,7 +186,7 @@ while ( have_posts() ):
 
                                         </li>
                                         <li class="type-aankoop type-aankoop-eenmalig">
-                                            <input type="radio" name="type-aankoop" value="eenmalig" id="type-aankoop-eenmalig">
+                                            <input type="radio" name="type-aankoop" value="eenmalig" id="type-aankoop-eenmalig-2">
                                             <i class="fas fa-check-circle"></i>
                                             <i class="fal fa-circle"></i>
 
@@ -152,7 +209,7 @@ while ( have_posts() ):
                                     <li><input value="1" name="quantity" class="handleCounter"></li>
                                     <!--<li><a href="javascript:;" data-id="<?php echo $product->ID; ?>" class="set add-to-cart">Bestel direct!</a></li>-->
                                     <li><a href="javascript:;" data-id="<?php echo $product->ID; ?>" class="set new-add-to-cart">Bestel direct!</a></li>
-                                    <li style="margin-top: 8px"><span class="grey-light"><?php echo $shipping_price_text; ?></span></li>
+                                    <li class="shipping-price-label"><span class="grey-light"><?php echo $shipping_price_text; ?></span></li>
                                 </ul>
                             </div>
 
@@ -180,10 +237,10 @@ while ( have_posts() ):
                             }
                             ?>
                         </div>
-                        <div class="bestel-directly d-md-none">
+                        <div class="bestel-directly d-md-none" style="display: none">
                             <ul class="d-flex flex-wrap">
                                 <li><input value="1" name="quantity" class="handleCounter"></li>
-                                <li><a href="javascript:;" data-id="<?php echo $product->ID; ?>" class="set add-to-cart">Bestel direct!</a></li>
+                                <li class=""><a href="javascript:;" data-id="<?php echo $product->ID; ?>" class="set add-to-cart">Bestel direct!</a></li>
                                 <?php /*if( $system ): ?>
 									<li><a href="<?php echo esc_url( get_permalink( $system->ID ) ); ?>" class="wt"><span>Bestel met</span> starterkit</a></li>
 								<?php endif;*/ ?>
@@ -283,8 +340,9 @@ while ( have_posts() ):
     add_action( 'wp_footer', function() { ?>
         <script type="text/javascript">
           $( ".type-aankoop" ).on('click', function() {
-            $( ".type-aankoop" ).removeClass('active');
+            $( ".type-aankoop.active" ).removeClass('active');
             $(this).addClass('active');
+            console.log('++');
             $(this).find('input').prop('checked', true)
           });
 

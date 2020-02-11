@@ -1173,8 +1173,8 @@ transform: inherit;-ms-transform: inherit;-o-transform: inherit; background:url(
 .product-wrap{padding: 0 0 48px 0;}
 .product-lt{padding: 8px 30px 0 0;}
 .product-dtls{}
-.product-dtls a{display: block;}
-.product-dtls a figure img{display: block;margin: 0 auto;width: auto;object-fit: contain;}
+.product-dtls a.product-url{display: block;}
+.product-dtls a.product-url figure img{display: block;margin: 0 auto;width: auto;object-fit: contain;}
 .slider-nav{padding: 39px 33px 0 55px;}
 .slider-nav li{}
 .slider-nav li a{display: inline-block;vertical-align: top;}
@@ -1191,9 +1191,8 @@ transform: inherit;-ms-transform: inherit;-o-transform: inherit; background:url(
 .bestel-directly{width: 69.1%;}
 .bestel-directly ul{}
 .bestel-directly ul li{padding: 0 12px 0 0;}
-.bestel-directly ul li:last-child{padding: 0;}
 /* .bestel-directly ul li:last-child{padding: 0 16px 0 8px;} */
-.bestel-directly ul li a.set{font-size: 13px;display: block;margin: 0;padding: 11px 25px;}
+.bestel-directly ul li a.set{font-size: 13px;display: block;margin: 0;padding: 10px 25px;}
 .bestel-directly ul li a.wt{display: block;font-size: 14px;padding: 11px 17px;letter-spacing: 0.9px;}
 .bestel-directly ul li a.wt span {color: #2b1913;font-family: 'TheWave-Rg';font-weight: normal;}
 .wt:hover {
@@ -1394,19 +1393,21 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
     color: #ffffff;
     overflow: hidden;
     border: solid 2px #D45A1D;
-    padding: 7px;
+    padding: 6px;
     margin: 5px 0;
     border-radius: 3px;
     display: block;
     position: relative;
     width: 415px;
+    background-color: #261e18;
+    text-align: left;
 }
 
 .homedelivary li.type-aankoop .fal, .homedelivary li.type-aankoop .fas {
     position: absolute;
     left: 0;
     top: 0;
-    font-size: 23px;
+    font-size: 20px;
     color: #D45A1D;
     padding: 0px 17px;
 }
@@ -1432,7 +1433,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
     font-size: 18px;
 }
 .homedelivary li.type-aankoop-nalever span {
-    padding: 43px 0;
+    padding: 43px 0px;
 }
 .homedelivary li.type-aankoop-eenmalig span {
     padding: 10px 0;
@@ -1484,7 +1485,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
 }
 
 .product-rt {
-    padding: 50px 0 0 13px!important;
+    padding: 50px 0 0 13px;
 }
 
 .handle-counter .counter-sub-minus, .handle-counter .counter-sub-plus {
@@ -1501,6 +1502,7 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
     bottom: 0px;
     left: 0px;
     margin-left: 13px;
+    background: #261f19;
 }
 
 .other-recurring-product .op-img {
@@ -1530,13 +1532,12 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
     font-weight: 200;
 }
 
-.dropdown-products .drop-prod:nth-child(odd) {
-    background-color: #f5f5f5;;
-    margin-bottom: 8px;
-    padding-bottom: 5px;
+.dropdown-products .drop-prod:nth-child(odd), .dropdown-products .drop-prod-sub:nth-child(odd) {
+    background-color: #f5f5f5;
+    padding: 12px 8px;
 }
 .dropdown-products .drop-prod, .dropdown-products .drop-prod-sub{
-    padding: 8px;
+    padding: 10px 8px;
 }
 
 .dropdown-products .fa-trash{
@@ -1550,4 +1551,27 @@ box-shadow: 0px 0px 5px 0px rgba(171,171,171,1);}
 .dropdown-products{
     overflow: scroll;
     height: 340px;
+}
+
+.go-to-cart {
+    margin-top: 40px;
+}
+
+#services-label {
+    margin-top: 10px;
+}
+
+.bestel-directly ul li.shipping-price-label {
+    width: 100%;
+    padding-top: 10px;
+}
+
+.drop-prod-price {
+    padding: 8px;
+    font-size: 20px;
+}
+
+.ingredients ul {
+    width: fit-content;
+    margin: auto;
 }

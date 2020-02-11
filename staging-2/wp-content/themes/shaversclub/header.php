@@ -82,7 +82,7 @@
                 </header>
                 <div id="dropdown-cart">
 	                <h4 class="pl-3 pt-3" style="display: inline-block;">Jouw winkelmand</h4>
-	                <p class="pl-3" style="display: inline-block; font-size: 14px;"><span id="drop-aantal"></span></p>
+                <p class="pl-3" style="display: inline-block; font-size: 14px;"><span id="drop-aantal"></span> artikelen</p>
 	                <hr />
 				    <div class="dropdown-products">
 					    
@@ -105,9 +105,9 @@
 					    	<p class="dropdown-price" style="font-family: 'TheWave-Bd'; color: #d45a1d; float: right;margin-right: 15px;">&euro;<span id="dropdown-price"></span></p>
 					    </div>
 					    <div class="col-12 text-center">
-<!--						    <a href="http://shop.shaversclub.nl/cart" class="set">Naar winkelmand</a>-->
-<!--                            <a href="http://localhost:8075/staging-2/winkelwagen" class="set">Naar winkelmand</a>-->
-                            <a href="http://localhost:8075/staging-2/?page_id=9109717" class="set">Naar winkelmand</a>
+<!--						    <a href="http://shop.shaversclub.nl/cart" class="set go-to-cart">Naar winkelmand</a>-->
+                            <a href="http://localhost:8073/cart" class="set go-to-cart">Naar winkelmand</a>
+<!--                            <a href="http://localhost:8075/staging-2/?page_id=9109717" class="set">Naar winkelmand</a>-->
 					    </div>
 				    </div>
 			    </div>

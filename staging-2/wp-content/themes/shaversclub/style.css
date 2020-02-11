@@ -131,7 +131,7 @@ p strong, p bold {
 	padding: 50px 30px 0 45px;
 }
 .product-rt {
-	padding: 120px 0 0 13px;
+	padding: 0px 0 0 13px;
 }
 
 .productpagina-banner-main .mesjes-out {
@@ -140,13 +140,13 @@ p strong, p bold {
 
 #productpage-splash > figure {
 	display: block;
-	height: 110vh;
+	height: 850px;
 	width: 100%;
 	position: relative;
 	background: #261f19;
 }
-.single-product .product-dtls a {
-	height: calc(100vh - 320px);
+.single-product .product-dtls a.product-url {
+	height: 460px;
 	display: flex;
 }
 
@@ -727,6 +727,7 @@ input {
 }
 */
 
+
 @media screen and (max-width:1850px) {
 	.countries > div {height: calc(100% - 110px);}
 	.countries-right {align-self: start;padding-top: 24px;}
@@ -739,14 +740,18 @@ input {
 @media screen and (max-width:1190px) {
 	.product-rt {padding: 55px 0 0 13px;}
 	#productpage-splash > figure {height: 800px;}
+	#productpage-splash > figure.figure-for-other-recurring-product {height: 900px;}
 	.single-product .banner-in img {min-height: 625px;object-fit: cover;}
-	.single-product .product-dtls a {height: 450px;justify-content: center;}
+	.single-product .product-dtls a.product-url {height: 450px;justify-content: center;}
 	.single-product .product-dtls a figure img {height: 400px;}
 	.single-product .slider-nav li a figure img {max-height: 85px;}
 	.countries {height: calc(470px * 1.5);background-size:auto calc(100% / 1.5);}
 	#step1 .owl-prev {left: 0px;bottom: -58px;}
 	#step1 .owl-next {right: 0px;bottom: -58px;}
 	#step1 .owl-carousel .owl-stage-outer{margin: 0;padding-bottom: 0}
+	.with-other-recurring-product .product-rt.col-md-6 {
+		height: 690px;
+	}
 }
 
 @media screen and (max-width:991px) {
@@ -769,6 +774,33 @@ input {
 	.mesjes-1 a.set.meest:before {content: "\a";white-space: pre;}
 	.mesjes-1 a.set.meest br {display: none}
 
+
+	.homedelivary li.type-aankoop {
+		width: 100%;
+		max-width: 330px;
+		padding: 8px;
+	}
+	.homedelivary li.type-aankoop .fas {
+		padding: 0px 10px;
+	}
+	.homedelivary li.type-aankoop label {
+		padding: 4px 70px 4px 40px;
+		font-size: 10px;
+	}
+	.homedelivary li.type-aankoop label b {
+		font-size: 13px;
+	}
+
+	.homedelivary li.type-aankoop-nalever span {
+		padding: 32px 0px;
+	}
+
+	.other-recurring-product {
+		width: 365px;
+	}
+	.other-recurring-product .op-desc {
+		width: 250px;
+	}
 }
 @media screen and (max-width:767px) {
 
@@ -784,7 +816,8 @@ input {
 	.countries {height: 570px;background-size: 100% auto;}
 	.countries-right.col-md-7 {-webkit-flex: 0 0 100%;-ms-flex: 0 0 100%;flex: 0 0 100%;max-width: 100%;padding-top: 5%;}
 
-	#productpage-splash > figure {height: 710px;}
+	#productpage-splash > figure {height: 1000px;}
+	#productpage-splash > figure.figure-for-other-recurring-product {height: 1140px;}
 
 	.single-product .banner-in img{min-height:674px;}
 	.single-product .wrapper > .banner{background: #eee9e5;padding:0 0 190px 0;}
@@ -794,18 +827,17 @@ input {
 	.product-lt {padding: 8px 0 0;}
 	.product-rt h2{display: block; margin-top: 15px;color: #ffffff;/*font-family:'TheWave-Rg';*/overflow: hidden;white-space: nowrap;text-overflow: ellipsis;}
 	/* .product-rt h4{display: none;} */
-	.product-rt {padding: 5px 0 0 13px;}
+	.product-rt {padding: 5px 0 0 0px;}
 	.like-h4 {line-height: 29px !important; margin: 0;font-size: 16px;}
 	.like-h4::after {display: none;}
-	.homedelivary {padding: 10px;}
 	.homedelivary-2 {padding: 0;height: 60px;position: relative;}
 	.homedelivary-2 > ul {position: absolute;bottom: 0;left: 0; width: 100%;}
 
 	.bestel-directly ul li {margin: auto;padding: 0 6px;}
-	.bestel-directly ul li:last-child { padding: 0;}
-	.productpagina-banner-main .mesjes-out {padding-top: 20px;}
+
+	.productpagina-banner-main .mesjes-out {padding-top: 0px;}
 	.map{height: auto;}
-	.bestel-directly .handle-counter {background-color: #ffffff; display: block;padding-top: 9px;}
+	.bestel-directly .handle-counter {display: block;}
 
 	.homedelivary a.meest {
 		height: auto !important;
@@ -820,44 +852,112 @@ input {
 	.dashboard-services .recent-orders-in {min-height: 200px}
 
 
-	.single-product .product-dtls a {
+	.single-product .product-dtls a.product-url {
 		height: 269px;
 		justify-content: center;
 	}
 	.single-product .product-dtls a figure img {
 		height: 269px;
 	}
-	#productpage-splash > figure {
-		height: 710px;
-	}
 
+	.other-recurring-product {
+		position: relative;
+		margin: 10px auto;
+		text-align: left;
+		max-width: 415px;
+	}
+	.handle-counter input {
+		width: 30px;
+	}
+	.handle-counter {
+		padding: 8px 5px;
+		min-width: 78px;
+	}
+	.other-recurring-product .op-desc {
+		width: 67%;
+		font-size: 12px;
+	}
+	.other-recurring-product .op-desc b {
+		font-size: 14px;
+	}
+	.productpagina-banner-main .mesjes-out {text-align: center;}
+
+	.homedelivary li.type-aankoop {
+		margin-left: auto;
+		margin-right: auto;
+	}
+	.with-other-recurring-product .product-rt.col-md-6 {
+		height: auto;
+	}
+	#dropdown-cart p {
+		font-size: 16px;
+
+	}
+	.drop-prod-price {
+		min-width: 75px;
+	}
 }
 @media screen and (max-width:575px) {
 	.single-product .banner-in img{min-height: 657px;}
 	.pop_close {right:5%;}
 	.countries {height: 450px;}
-	.productpagina-banner-main .mesjes-out {padding-top: 40px;}
+	.productpagina-banner-main .mesjes-out {padding-top: 30px;}
+	#dropdown-cart p {
+		font-size: 16px;
+	}
+
 }
 @media screen and (max-width:479px) {
 	.single-product .product-dtls a figure img {max-height: 190px;}
 	.single-product .banner-in img{min-height: 534px;}
 	.countries {height: 400px;}
-	.bestel-directly {position: absolute;top: 605px;}
-	.productpagina-banner-main .mesjes-out {position: absolute;top: 740px;}
 	#step-12 .shaver-main figure, #step-12 .shaver-main img {height: 49px;}
 	#step-12 .meest {top: 20px; right: 15px}
 
 	#logo-mobile figure {display: flex;height: 55px;}
 	#logo-mobile img {width: 180px;align-self: center;display: flex;}
 	.dashboard-links {clear: both;}
-	/* .dashboard-links ul li {width: 10%;} */
+	.productpagina-banner-main .mesjes-out {padding-top: 35px;}
+
+	#dropdown-cart {
+		margin: 10px;
+		width: 95%!important;
+	}
+	.dropdown-products {
+		height: 240px;
+	}
+
+	.other-recurring-product {
+		padding: 5px 0;
+	}
+	.other-recurring-product .op-desc {
+		font-size: 11px;
+	}
+	.other-recurring-product .op-desc b {
+		font-size: 13px;
+	}
+	.other-recurring-product .op-img {
+		width: 30%;
+		height: 100%;
+	}
+	#dropdown-cart p {
+		font-size: 16px;
+	}
+
 }
 @media screen and (max-width:399px) {
-    .remove-from-cart i {display: none;}
+	.remove-from-cart i {display: none;}
 	#logo-mobile img {width: 150px;}
 	#step-12 .meest {top: -15px}
 	#step-12 .shaver-main figure, #step-12 .shaver-main img {height: 69px;}
 	.cartridges-text:before {content: "\a";white-space: pre;}
 	.social-media-lt ul li {width: 80%}
+
+	#dropdown-cart .col-lg-12, #dropdown-cart .col-3, #dropdown-cart .col-9 {
+		padding: 0px;
+	}
+	.other-recurring-product {
+		width: 100%;
+	}
 }
 
