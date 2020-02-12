@@ -1500,33 +1500,55 @@ class Cart extends CustomPostType {
         wp_die( json_encode( $out ) );
     }
 
-    public function ajax_export_users() {
+    public function ajax_export_users__hidden() {
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', PHP_EOL . '->wordpress jest zjebany<-'. date('Y-m-d H:i:s') .PHP_EOL, FILE_APPEND);
+
         global $wpdb;
 
-        //users 18834
-        $start = 0;
-        $stop = 1000;
-        $usersStack = [];
+        $offset = 0;
+        $stop = $limit = 1000;
+
         for($i=1; $i<=2; $i++) {
-            $users = $wpdb->get_results("SELECT * FROM wpstg0_users LIMIT $start,$stop");
-            $sql = 'INSERT INTO `users` (`email`, `password`, `created_at`, `user_status`, `wp_user_id`) VALUES' . PHP_EOL;
+            $users = $wpdb->get_results("SELECT * FROM wpstg0_users LIMIT $offset, $limit");
+
+            $sql = 'INSERT INTO `users` (`email`, `password`, `created_at`, `user_status`, `user_type`, `wp_user_id`, `first_name`, `last_name`, `ref_code`, `mollie_id`) VALUES' . PHP_EOL;
             $j=0;
 
             if ($users) {
+
                 foreach ($users as $user) {
-                    $sql .= "('{$user->user_email}', '{$user->user_pass}', '{$user->user_registered}', 1, {$user->ID})," . PHP_EOL;
+                    $sql .= "('{$user->user_email}', '{$user->user_pass}', '{$user->user_registered}', 1, 0, {$user->ID},";
+                    $userMeta = $wpdb->get_results("SELECT * FROM wpstg0_usermeta WHERE user_id = {$user->ID} 
+                                    and (meta_key = 'first_name' or meta_key = 'last_name' or meta_key = 'ss_ref' or meta_key = 'mollie_id')");
+
+                    $uMeta = [
+                        'first_name' => 'first name',
+                        'last_name' => 'last name',
+                        'ss_ref' => '',
+                        'mollie_id' => ''
+                    ];
+                    foreach($userMeta as $um) {
+                        if(isset($uMeta[$um->meta_key])) {
+                            //$uMeta[$um->meta_key] = htmlspecialchars($um->meta_value, ENT_QUOTES);
+                            $uMeta[$um->meta_key] = $um->meta_value;
+                        }
+                    }
+
+                    $sql .= " \"{$uMeta['first_name']}\", \"{$uMeta['last_name']}\", '{$uMeta['ss_ref']}', '{$uMeta['mollie_id']}'),". PHP_EOL;
                 }
                 if($j == 200 || $j == 400 || $j == 800) {
-                    $sql .= 'INSERT INTO `users` (`email`, `password`, `created_at`, `user_status`, `wp_user_id`) VALUES' . PHP_EOL;
+                    $sql .= 'INSERT INTO `users` (`email`, `password`, `created_at`, `user_status`, `wp_user_id`, `first_name`, `last_name`, `ref_code`) VALUES' . PHP_EOL;
                 }
                 $j++;
             }
-            $start += 1000;
+            //die(print_r($sql));
+            //die(print_r($users));
+            $offset += 1000;
             $stop += 1000;
 
-            file_put_contents( SS_PATH . 'includes/uexport/ugroup_start_' . $start .'_stop_'. $stop. '.sql', $sql );
+            file_put_contents( SS_PATH . 'includes/uexport/ugroup_start_' . $offset .'_stop_'. $stop. '.sql', $sql );
         }
-        wp_die( json_encode( ['ajax_export_users'] ) );
+        wp_die( json_encode( ['ajax export users'] ) );
     }
 
     public static function ajax_place_external_order() {
