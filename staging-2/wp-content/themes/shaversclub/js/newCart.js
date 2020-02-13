@@ -3,7 +3,11 @@ var cartSubscriptions = [];
 var order = [];
 //var apiUrl = 'http://localhost:8073/api/cart/';
 var apiUrl = 'http://vue.shavers.test/api/cart/';
+var cookie_path = '/';
+var cookie_domain = 'shavers.test';
 //var apiUrl = 'https://shop.shaversclub.nl/api/cart/';
+//var cookie_path = '/';
+//var cookie_domain = 'shaversclub.nl';
 
 jQuery(".shop-new").on("click", function(){
   jQuery("#dropdown-cart").fadeToggle(750, function() {
@@ -471,10 +475,7 @@ function setCookie(name,value) {
   date.setTime(date.getTime() + (days*24*60*60*1000));
   var expires = "; expires=" + date.toUTCString();
 
-  //document.cookie = name + "=" + (value || "")  + expires + "; path=/; domain=shaversclub.nl";
-  //document.cookie = name + "=" + (value || "")  + expires + ", path=/, domain=localhost";
-  document.cookie = name + "=" + (value || "") + expires + ";path=/;domain=shavers.test";
-  //console.log(name + "=" + (value || "")  + expires + ", path=/, domain=shavers.test");
+  document.cookie = name + "=" + (value || "") + expires + ";path="+ cookie_path + ";domain=" + cookie_domain;
 }
 
 function uuidv4() {
