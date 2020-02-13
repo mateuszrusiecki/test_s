@@ -558,11 +558,13 @@ class Customer {
 	public static function ajax() {
 		
 		//Test functies na development weer verwijderen
-		//add_action( 'wp_ajax_ss_login', array( 'Customer', 'ajax_login' ) );
+        add_action( 'wp_ajax_ss_login', array( 'Customer', 'ajax_login' ) );
+        add_action( 'wp_ajax_ss_login_cookie', array( 'Customer', 'ajax_login_cookie' ) );
 		//add_action( 'wp_ajax_ss_register', array( 'Customer', 'ajax_register' ) );
 		//Test functies na development weer verwijderen
-						
-		add_action( 'wp_ajax_nopriv_ss_login', array( 'Customer', 'ajax_login' ) );
+
+        add_action( 'wp_ajax_nopriv_ss_login', array( 'Customer', 'ajax_login' ) );
+        add_action( 'wp_ajax_nopriv_ss_login_cookie', array( 'Customer', 'ajax_login_cookie' ) );
 		add_action( 'wp_ajax_nopriv_ss_register', array( 'Customer', 'ajax_register' ) );
 		add_action( 'wp_ajax_nopriv_ss_forgot', array( 'Customer', 'ajax_forgot' ) );
 		add_action( 'wp_ajax_ss_personal_details', array( 'Customer', 'ajax_personal_details' ) );
@@ -1204,6 +1206,167 @@ class Customer {
 		}
 		wp_die( json_encode( $out ) );
 	}
+
+
+    public static function ajax_login_cookie() {
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'ajax_login' .PHP_EOL, FILE_APPEND);
+        $out = array(
+            'status' => 'error',
+        );
+
+        $cart = Cart::get_cart_from_session();
+
+        SS_Logger::write( 'Customer:ajax_login' );
+
+        if( isset( $_POST['email'], $_POST['password'] ) ) {
+            $signon = wp_signon( array (
+                'user_login' => $_POST['email'],
+                'user_password' => $_POST['password'],
+                'remember' => isset( $_POST['rememberme'] ) ? $_POST['rememberme'] : false,
+            ), false );
+
+            $result = self::get_auth_cookie($signon->ID, isset( $_POST['rememberme'] ) ? $_POST['rememberme'] : false, false);
+            //$result = wp_signon_cookie($signon->ID, isset( $_POST['rememberme'] ) ? $_POST['rememberme'] : false);
+
+            if( is_wp_error( $signon ) ) {
+
+                $messages = array(
+                    'invalid_username' => 'email',
+                    'invalid_email' => 'email',
+                    'incorrect_password' => 'password',
+                    'too_many_retries' => 'password',
+                );
+
+                $out['error_messages'] = array();
+                foreach ( $signon->errors as $key => $message ) {
+
+                    if( ! isset( $messages[ $key ] ) ) {
+                        SS_Logger::write( $key );
+                    }
+
+                    $key = isset( $messages[ $key ] ) ? $messages[ $key ] : $key;
+                    $out['error_messages'][ $key ] = implode( '<br>', $message );
+                }
+
+            } else {
+                $customer = new Customer( $signon );
+                SS_Logger::write( $customer );
+                if( $campaign = $cart->get_campaign() ) {
+                    SS_Logger::write( $campaign );
+                    $cart->set_campaign( $campaign->ID );
+                }
+                SS_Logger::write( serialize($cart) );
+                update_user_meta( $signon->ID, '_session_cart', $cart );
+                $page = get_page_by_path( 'mijn-account' );
+                $out = array(
+                    'status' => 'success',
+                    'logout_url' => wp_logout_url( '__cart_url__' ),
+                    'url' => get_permalink( $page->ID ),
+                    'cookie' => $result['value'],
+                    'cookie_name' => $result['name'],
+                    'cookie_expire' => $result['expire']
+                );
+                if( trim( $_POST[ 'referrer' ], '?/ ' ) ) {
+
+                    if( isset( $_SESSION[ 'ss_ref_id' ] ) && ( $_SESSION[ 'ss_ref_id' ] == $customer->ID ) ) {
+                        unset( $_SESSION['ss_ref'], $_SESSION['ss_ref_id'] );
+                        $out[ 'trigger_product_select' ] = true;
+                    }
+
+                    $out[ 'user' ] = array(
+                        'name' => $customer->display_name,
+                        'first_name' => $customer->meta( 'first_name' ),
+                        'last_name' => $customer->meta( 'last_name' ),
+                        'billing_postcode' => $customer->meta( 'billing_postcode' ),
+                        'billing_house_number' => $customer->meta( 'billing_house_number' ),
+                        'billing_house_number_suffix' => $customer->meta( 'billing_house_number_suffix' ),
+                        'billing_street_name' => $customer->meta( 'billing_street_name' ),
+                        'billing_extra_line' => $customer->meta( 'billing_extra_line' ),
+                        'billing_city' => $customer->meta( 'billing_city' ),
+                        'billing_country' => $customer->meta( 'billing_country' ),
+                        'is_recurring' => $customer->is_recurring(),
+                        /*
+                                                'shipping_postcode' => $customer->meta( 'shipping_postcode' ),
+                                                'shipping_house_number' => $customer->meta( 'shipping_house_number' ),
+                                                'shipping_house_number_suffix' => $customer->meta( 'shipping_house_number_suffix' ),
+                        */
+                    );
+                }
+            }
+        } else {
+            SS_Logger::write( json_encode( $_POST ) );
+            $out['message'] = __( 'Incorrect input', 'shaversclub-store' );
+        }
+
+        //file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode($out) .PHP_EOL, FILE_APPEND);
+        wp_die( json_encode( $out ) );
+    }
+
+
+    static function get_auth_cookie( $user_id, $remember = false, $secure = '', $token = '' ) {
+
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', 'get_auth_cookie' .PHP_EOL, FILE_APPEND);
+        if ( $remember ) {
+            /**
+             * Filters the duration of the authentication cookie expiration period.
+             *
+             * @since 2.8.0
+             *
+             * @param int  $length   Duration of the expiration period in seconds.
+             * @param int  $user_id  User ID.
+             * @param bool $remember Whether to remember the user login. Default false.
+             */
+            $expiration = time() + apply_filters( 'auth_cookie_expiration', 14 * DAY_IN_SECONDS, $user_id, $remember );
+
+            /*
+             * Ensure the browser will continue to send the cookie after the expiration time is reached.
+             * Needed for the login grace period in wp_validate_auth_cookie().
+             */
+            $expire = $expiration + ( 12 * HOUR_IN_SECONDS );
+        } else {
+            /** This filter is documented in wp-includes/pluggable.php */
+            $expiration = time() + apply_filters( 'auth_cookie_expiration', 2 * DAY_IN_SECONDS, $user_id, $remember );
+            $expire = 0;
+        }
+
+        $expiration = time() + ( 12 * HOUR_IN_SECONDS );
+
+        if ( '' === $token ) {
+            $manager = WP_Session_Tokens::get_instance( $user_id );
+            $token   = $manager->create( $expiration );
+        }
+
+        file_put_contents( SS_PATH . 'logs2/debug-' . date('Y-m-d') . '.log', json_encode($token) .PHP_EOL, FILE_APPEND);
+        $logged_in_cookie = wp_generate_auth_cookie( $user_id, $expiration, 'logged_in', $token );
+
+        /**
+         * Fires immediately before the logged-in authentication cookie is set.
+         *
+         * @since 2.6.0
+         * @since 4.9.0 The `$token` parameter was added.
+         *
+         * @param string $logged_in_cookie The logged-in cookie.
+         * @param int    $expire           The time the login grace period expires as a UNIX timestamp.
+         *                                 Default is 12 hours past the cookie's expiration time.
+         * @param int    $expiration       The time when the logged-in authentication cookie expires as a UNIX timestamp.
+         *                                 Default is 14 days from now.
+         * @param int    $user_id          User ID.
+         * @param string $scheme           Authentication scheme. Default 'logged_in'.
+         * @param string $token            User's session token to use for this cookie.
+         */
+        do_action( 'set_logged_in_cookie', $logged_in_cookie, $expire, $expiration, $user_id, 'logged_in', $token );
+
+
+        //setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, $expire, COOKIEPATH, COOKIE_DOMAIN, false, true);
+        setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, time() + (86400 * 30), COOKIEPATH, COOKIE_DOMAIN);
+
+        return [
+            'name' => LOGGED_IN_COOKIE,
+            'value' => $logged_in_cookie,
+            'expire' => $expiration
+        ];
+    }
+
 
     public static function ajax_register() {
 

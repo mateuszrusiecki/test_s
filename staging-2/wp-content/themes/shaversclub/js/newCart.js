@@ -13,6 +13,23 @@ jQuery(".shop-new").on("click", function(){
   });
 });
 
+//add single product to cart(from products list)
+$('.product-content').on('click', '.add-to-cart-pp', function(e) {
+  e.preventDefault();
+
+  var id = $( this ).data( 'id' );
+  var userToken = getUserToken();
+
+  $.post( apiUrl, { id: id , quantity: 1, wp_user_token: userToken, subscription: 0}, function( response ) {
+    console.log(response);
+    if( response && ( response.status === 'success' )) {
+      getCartFromAPI();
+      $("#dropdown-cart").fadeIn(750);
+    }
+  }, 'json' );
+
+});
+
 $('#productpage-splash').on('click', '.new-add-to-cart', function(e) {
   e.preventDefault();
 
