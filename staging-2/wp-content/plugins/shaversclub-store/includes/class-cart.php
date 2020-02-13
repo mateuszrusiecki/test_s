@@ -853,7 +853,7 @@ class Cart extends CustomPostType {
                 $cookieExpire = 2592000; //30 days (86400 * 30)
                 $cookieLength = 10;
                 $random = openssl_random_pseudo_bytes($cookieLength);
-                setcookie('wp_user_token', bin2hex($random), time() + $cookieExpire, '/', '.shaversclub.nl');
+                setcookie('wp_user_token', bin2hex($random), time() + $cookieExpire, COOKIEPATH, COOKIE_DOMAIN);
             }
 
             $data = [
