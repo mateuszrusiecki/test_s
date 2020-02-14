@@ -29,6 +29,24 @@ $('.product-content').on('click', '.add-to-cart-pp', function(e) {
     if( response && ( response.status === 'success' )) {
       getCartFromAPI();
       $("#dropdown-cart").fadeIn(750);
+
+      //console.log(response.product);
+      dataLayer.push({
+        event: 'addToCart',
+        ecommerce: {
+          currencyCode: 'EUR',
+          add: {
+            products: [{
+                name: response.product.name,
+                id: String(id),
+                price: String(response.product.price / 100),
+                quantity: '1',
+                variant: 'single order'
+            }]
+          }
+        }
+      });
+
     }
   }, 'json' );
 
